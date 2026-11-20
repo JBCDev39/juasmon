@@ -248,6 +248,9 @@ export function createGame(config = {}, seed = 1, history = {}) {
 export const isClassic = state => state.config.type === 'clasica';
 export const isMixed = state => state.config.type === 'supervivencia' || state.config.type === 'contrarreloj' || state.config.structure !== 'rondas';
 
+function allInDue(s) {
+  return !!s.config.allIn && s.config.type === 'clasica' && isMixed(s) && s.players.length === 1 && !s.config.daily && s.qi === questionsPerRound(s) - 1;
+}
 export function currentPlayer(state) {
   return state.qi % state.players.length;
 }
@@ -334,7 +337,12 @@ export function pdFeedback(g, a) {
 function settle(state, res, extraLog = []) {
   const p = currentPlayer(state);
   const scores = state.scores.slice();
-  scores[p] += res.points;
+  const bet = state.bets?.[p] ?? null;
+  if (bet !== null) {
+    const delta = res.points >= 1 ? bet : res.points > 0 ? 0 : -bet;
+    res = { ...res, bet: { amount: bet, delta } };
+    scores[p] += delta;
+  } else scores[p] += res.points;
   for (const e of extraLog) scores[e.player] += e.points;
   const correct = res.points >= 1, partial = res.points > 0 && res.points < 1;
   const lives = state.lives === null ? null : state.lives - (res.points === 0 ? 1 : 0);
@@ -458,9 +466,23 @@ export function reduce(state, action, ctx) {
         return nextQuestion({ ...state, qi: state.qi + 1 }, ctx);
       }
       const qi = state.qi + 1;
-      if (qi < questionsPerRound(state)) return nextQuestion({ ...state, qi }, ctx);
+      if (qi < questionsPerRound(state)) {
+        const ns = nextQuestion({ ...state, qi }, ctx);
+        // Todo o nada: antes de la última pregunta se apuesta viendo solo el tema.
+        return allInDue(ns) ? { ...ns, phase: 'bet', bets: ns.players.map(() => null) } : ns;
+      }
       if (state.ri + 1 < roundList(state).length) return { ...state, phase: 'roundEnd', q: null };
       return { ...state, phase: 'end', q: null };
+    }
+
+    // Todo o nada: la apuesta de cada jugador (de 0 a todos sus puntos).
+    case 'BET': {
+      if (state.phase !== 'bet') return state;
+      const p = action.player;
+      if (p < 0 || p >= state.players.length || state.bets[p] !== null) return state;
+      const bets = state.bets.slice();
+      bets[p] = Math.max(0, Math.min(Math.floor(state.scores[p]), Math.floor(Number(action.amount) || 0)));
+      return { ...state, bets, phase: bets.every(b => b !== null) ? 'question' : 'bet' };
     }
 
     // Contrarreloj: se acabó el tiempo total.

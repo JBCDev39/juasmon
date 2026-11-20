@@ -6,6 +6,8 @@
 // ============================================================
 import * as E from './engine.js';
 import { connectCloud } from './nube.js';
+import { createMinis } from './minis.js';
+import { createCasino } from './casino.js';
 
 {
 const $app = document.getElementById('app');
@@ -29,6 +31,7 @@ const SCORING = {
 const WIN_LINES = ['¡A cachete!', '¡Pura vida!', '¡Mae, qué nivel!', '¡Es muy eficaz!', '¡Golpe crítico!', '¡Jovensaso total!'];
 const LOSE_LINES = ['¡Por mamón!', '¡Sobón!', '¡Por mamapichas!', '¡Qué sal, mae!', 'Diay, mae… ¿qué pasó?', '¡Qué torta!', '¡Lo bailaron!', '¡Qué despiche!', 'Pobre carajillo…', '¡Se debilitó!', '¡Vuelva a Pueblo Paleta!', 'Hasta un Magikarp sabía esa.', 'Usó Salpicadura… no pasó nada.', 'Ni con una Hiperpoción se salva.'];
 const TIE_LINE = 'Diay, empate. ¿Otra?';
+const MISS_LINES = ['Diay, no.', 'Diay, no.', '¡Me cago en Figueres!', 'Diay, no.'];
 // Siempre la misma frase para la misma partida (no cambia al volver a dibujar la pantalla).
 const lineFor = (list, seed, k = 0) => list[((seed >>> 0) + k * 7) % list.length];
 // Rangos según la experiencia acumulada (puntos ganados en todas las partidas).
@@ -36,7 +39,7 @@ const RANKS = [[0, 'Novato'], [25, 'Entrenador'], [75, 'Líder de gimnasio'], [1
 const rankOf = xp => { let r = RANKS[0]; for (const x of RANKS) if (xp >= x[0]) r = x; const i = RANKS.indexOf(r); return { name: r[1], next: RANKS[i + 1] || null, i }; };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
-const APP_VERSION = 9;
+const APP_VERSION = 10;
 const FLAG_REASONS = ['La respuesta está mal', 'La pregunta no tiene sentido o es confusa', 'Un nombre o dato está mal escrito', 'Es demasiado fácil o difícil', 'Otro'];
 const FLAG_SVG = '<svg class="flagico" viewBox="0 0 10 12" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="0" width="1" height="12" fill="currentColor"/><rect x="2" y="1" width="6" height="1" fill="var(--red)"/><rect x="2" y="2" width="7" height="3" fill="var(--red)"/><rect x="2" y="5" width="5" height="1" fill="var(--red)"/></svg>';
 const store = {
@@ -140,7 +143,7 @@ const MEDAL_DEFS = [
   ['juas', '¡JUAS!', 'Acierte 10 veces con un error de tipeo.', 'Chistosas', 'juas', '#e3350d'],
   ['autor', 'Autor', 'Cree 10 preguntas propias.', 'Chistosas', 'pluma', '#c98a00'],
   ['reportero', 'Ojo crítico', 'Reporte una pregunta que esté mala.', 'Chistosas', 'lupa', '#56615b'],
-  ['mejenga1', 'Primera mejenga', 'Gane su primer duelo en línea.', 'En línea', 'espadas', '#2f6fdb', null, true],
+  ['mejenga1', 'Primer duelo', 'Gane su primer duelo en línea.', 'En línea', 'espadas', '#2f6fdb', null, true],
   ['paliza', 'Paliza', 'Gane un duelo en línea por 5 puntos o más.', 'En línea', 'estallido', '#e3350d', null, true],
   ['remontada', 'Remontada', 'Gane un duelo en línea después de ir perdiendo por 3.', 'En línea', 'flecha', '#2e9e4f', null, true],
   ['rival10', 'Rival eterno', 'Gánele 10 duelos en línea al mismo rival.', 'En línea', 'rival', '#8a4fd8', null, true],
@@ -155,6 +158,16 @@ const medalById = id => MEDALS.find(m => m.id === id);
 
 const crDate = (d = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Costa_Rica', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 let daily = store.load('pt-daily', {});
+// Fichas del Casino Azulona: se ganan jugando y solo sirven en el casino.
+let fichas = store.load('pt-fichas', { n: 100, earned: 0 });
+function addFichas(n) {
+  n = Math.round(n);
+  if (!n) return 0;
+  fichas.n = Math.max(0, fichas.n + n);
+  if (n > 0) fichas.earned = (fichas.earned || 0) + n;
+  store.save('pt-fichas', fichas);
+  return n;
+}
 let dailyBoard = null, userId = null;
 
 // ---------- perfil del entrenador (uno por teléfono) ----------
@@ -204,6 +217,21 @@ function renameRecords(from, to) {
   if (records.medals?.[from]) { records.medals[to] = [...new Set([...(records.medals[to] || []), ...records.medals[from]])]; delete records.medals[from]; }
   store.save('pt-records', records);
 }
+// Qué falta para ganar el ícono bloqueado, con el avance cuando se puede medir.
+function lockHint(k) {
+  const id = AV_LOCK[k], m = medalById(id), st = records.stats?.[myName()] || {};
+  const best = pre => Math.max(0, ...Object.entries(records.solo).filter(([key]) => key.startsWith(pre)).map(([, r]) => r.best));
+  const bestStreak = Math.max(0, ...Object.values(records.solo).map(r => r.streak || 0));
+  const prog = {
+    fiebre1: `Lleva ${st.games || 0} de 10 partidas.`,
+    sabio2: `Lleva ${st.correct || 0} de 500 aciertos.`,
+    racha20: `Su mejor racha: ${bestStreak} de 20.`,
+    superviviente35: `Su récord en Supervivencia: ${fmtPts(best('supervivencia'))} de 35.`,
+    veloz22: `Su récord en Contrarreloj: ${fmtPts(best('contrarreloj'))} de 22.`,
+    puravida: `Racha actual: ${plural(dailyStreak(), 'día', 'días')} de 30.`,
+  }[id] || '';
+  return `🔒 Gane la medalla <b>${esc(m.name)}</b>: ${esc(m.how.charAt(0).toLowerCase() + m.how.slice(1))} ${prog}`;
+}
 function openProfile(first) {
   profDraft = { name: profile?.name ?? (store.load('pt-config', null)?.solo?.name?.trim() || ''), color: profile?.color || AV_COLORS[Math.floor(Math.random() * AV_COLORS.length)], icon: profile?.icon || 'estrella', first, warn: '' };
   goto(first ? 'welcome' : 'profile');
@@ -238,9 +266,9 @@ function profileView() {
       <div class="box field"><span class="l px">Color</span><div class="swatches">${AV_COLORS.map(c => `<button class="swatch" data-act="prof-color" data-val="${c}" style="--av:${c}" aria-pressed="${d.color === c}" aria-label="Color ${c}"></button>`).join('')}</div></div>
       <div class="box field"><span class="l px">Ícono</span><div class="swatches">${Object.keys(AV_ICONS).map(k => {
         const lock = iconLocked(k), m = lock ? medalById(AV_LOCK[k]) : null;
-        return `<button class="iconpick ${lock ? 'locked' : ''}" data-act="prof-icon" data-val="${k}" aria-pressed="${d.icon === k}" ${lock ? `disabled title="Se gana con la medalla ${esc(m.name)}" aria-label="${k}: bloqueado, se gana con la medalla ${esc(m.name)}"` : `aria-label="${k}"`}>${avatar({ ...d, icon: k })}${lock ? '<span class="lock" aria-hidden="true">🔒</span>' : ''}</button>`;
+        return `<button class="iconpick ${lock ? 'locked' : ''}" data-act="prof-icon" data-val="${k}" aria-pressed="${d.icon === k}" ${lock ? `aria-label="${k}: bloqueado, se gana con la medalla ${esc(m.name)}"` : `aria-label="${k}"`}>${avatar({ ...d, icon: k })}${lock ? '<span class="lock" aria-hidden="true">🔒</span>' : ''}</button>`;
       }).join('')}</div>
-      <p class="hint">Los íconos con candado se desbloquean ganando medallas.</p></div>
+      ${d.lockMsg ? `<p class="lockmsg">${d.lockMsg}</p>` : '<p class="hint">Los íconos con candado se desbloquean ganando medallas. Toque uno para ver qué le falta.</p>'}</div>
     </div>
     <div class="row end"><button class="btn" data-act="prof-save">${first ? '¡Listo!' : 'Guardar'}</button></div>
   </main>`;
@@ -256,6 +284,8 @@ const PIX = {
   trophy: ['############', '#.########.#', '#.########.#', '.#.######.#.', '...######...', '....####....', '.....##.....', '.....##.....', '....####....', '...######...', '...######...', '............'],
   flag: ['##..........', '#######.....', '#########...', '#########...', '#######.....', '##..........', '##..........', '##..........', '##..........', '##..........', '##..........', '##..........'],
   globe: ['....####....', '..##.##.##..', '.#..#..#..#.', '#...#..#...#', '############', '#...#..#...#', '#...#..#...#', '############', '#...#..#...#', '.#..#..#..#.', '..##.##.##..', '....####....'],
+  coin: ['....####....', '..########..', '.###....###.', '.##.####.##.', '##.##..##.##', '##.##.###.##', '##.###.##.##', '##.##..##.##', '.##.####.##.', '.###....###.', '..########..', '....####....'],
+  dice: ['############', '#..........#', '#.##....##.#', '#.##....##.#', '#..........#', '#....##....#', '#....##....#', '#..........#', '#.##....##.#', '#.##....##.#', '#..........#', '############'],
   heart: ['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...'],
 };
 function pixSvg(rows, color = '#1d2321', cls = '') {
@@ -551,6 +581,11 @@ function recordEnd() {
     if (rk >= RANKS.length - 1) earn('jovensaso');
     records.medals[k] = [...have];
   });
+  // Fichas para el casino: 1 por acierto, más un extra por récord o reto completado.
+  if (state.players.length === 1) {
+    const right = c.type === 'rosco' ? state.scores[0] : state.log.filter(l => l.player === 0 && l.correct).length;
+    endInfo.fichas = addFichas(right + (endInfo.newRecord ? 5 : 0) + (c.daily ? 5 : 0));
+  }
   store.save('pt-records', records);
 }
 
@@ -653,7 +688,7 @@ function menuView() {
   const me = myName(), xp = records.xp[me] || 0, rk = rankOf(xp);
   const pct = rk.next ? Math.round((xp - RANKS[rk.i][0]) / (rk.next[0] - RANKS[rk.i][0]) * 100) : 100;
   const medals = myMedals().size, total = MEDALS.filter(m => !m.soon).length;
-  const today = daily[crDate()];
+  const pend = pendingToday();
   return `<div class="home">
     <div class="topbar"><button class="mini-wm" data-act="title"><b>JUAS</b><i>mon</i></button><div class="tools">${reportsBtn()}${soundBtn()}</div></div>
     <button class="tcard" data-act="profile" aria-label="Mi perfil: ${esc(me)}">
@@ -665,7 +700,8 @@ function menuView() {
       <span class="stats3">
         <span><small class="px">Medallas</small><b>${medals} / ${total}</b></span>
         <span><small class="px">Racha</small><b>${plural(dailyStreak(), 'día', 'días')}</b></span>
-        <span><small class="px">Duelos</small><b>${records.duels[me] || 0} ganados</b></span>
+        <span><small class="px">Duelos</small><b>${records.duels[me] || 0}</b></span>
+        <span><small class="px">Fichas</small><b>${fichas.n}</b></span>
       </span>
     </button>
     ${cont}
@@ -674,17 +710,44 @@ function menuView() {
       <button class="bp" data-act="online" style="--cc:var(--blue);--i:2">${pixSvg(PIX.globe, '#fff')}<span><b class="px">En línea</b><span>Rete a un compa con un código</span></span></button>
     </div>
     <div class="tiles">
-      ${tile('daily', 'Reto del día', today ? `Hoy: ${fmtPts(today.score)} / 10` : '¡Nuevo hoy!', 'star', '#2f6fdb', 3, today ? '' : 'NUEVO')}
-      ${tile('roscoSetup', 'Juasrosco', 'De la A a la Z', 'ring', '#e8722a', 4)}
-      ${tile('custom', 'Mis preguntas', custom.length ? plural(custom.length, 'propia', 'propias') : 'Escriba las suyas', 'pencil', 'var(--yellow)', 5)}
-      ${tile('records', 'Medallas', 'Récords y logros', 'trophy', 'var(--ok)', 6)}
+      ${tile('hoy', 'Hoy', pend ? `${plural(pend, 'cosa pendiente', 'cosas pendientes')}` : '¡Todo listo por hoy!', 'star', '#2f6fdb', 3, pend ? String(pend) : '')}
+      ${tile('casino', 'Casino Azulona', `${fichas.n} fichas`, 'coin', '#e8a500', 4)}
+      ${tile('roscoSetup', 'Juasrosco', 'De la A a la Z', 'ring', '#e8722a', 5)}
+      ${tile('modos', 'Más modos', 'Cadena, tipos y ahorcado', 'dice', '#8a4fd1', 6)}
+      ${tile('custom', 'Mis preguntas', custom.length ? plural(custom.length, 'propia', 'propias') : 'Escriba las suyas', 'pencil', 'var(--yellow)', 7)}
+      ${tile('records', 'Medallas', 'Récords y logros', 'trophy', 'var(--ok)', 8)}
     </div>
     ${installEvt && !standalone() ? '<button class="installbtn" data-act="install">⬇ Instalar JUASmon en este celular</button>' : ''}
   </div>`;
 }
 
-function screenHead(title) {
-  return `<header class="hud"><div class="topline"><div class="screen-head"><button class="ibtn" data-act="menu" aria-label="Volver al menú">◀ <span>Menú</span></button><h1 class="px">${title}</h1></div><div class="tools">${soundBtn()}</div></div></header>`;
+const BACK_NAMES = { menu: 'Menú', hoy: 'Hoy', modos: 'Más modos', casino: 'Casino' };
+// Lo diario en un solo lugar: reto, Pokédle y raspadita.
+function pendingToday() {
+  try { return (daily[crDate()] ? 0 : 1) + (MINI.pokedleDone() ? 0 : 1) + (CAS.scratchDone() ? 0 : 1); } catch { return 0; }
+}
+function hubCard(act, val, title, desc, status, icon, color, done) {
+  return `<button class="hubcard ${done ? 'done' : ''}" data-act="${act}" ${val ? `data-val="${val}"` : ''} style="--cc:${color}"><span class="ico">${pixSvg(icon, '#1d2321')}</span><span class="tt"><b class="px">${title}</b><span>${desc}</span><small>${status}</small></span><span class="chev" aria-hidden="true">${done ? '✓' : '▸'}</span></button>`;
+}
+function hoyView() {
+  const t = daily[crDate()], pd = MINI.pokedleStatus(), rs = CAS.scratchDone();
+  return `${screenHead('Hoy')}<main class="${F.newScreen ? 'enter' : ''} hub">
+    <p class="hint">Todo se renueva a medianoche, hora de Costa Rica.</p>
+    ${hubCard('daily', '', 'Reto del día', '10 preguntas, las mismas para todos.', t ? `Hoy hizo ${fmtPts(t.score)} / 10 · racha de ${plural(dailyStreak(), 'día', 'días')}` : 'Pendiente', PIX.star, '#2f6fdb', !!t)}
+    ${hubCard('mini-open', 'pokedleDia', 'Pokédle del día', 'Adivine el Pokémon secreto en 6 intentos y compártalo.', pd || 'Pendiente', PIX.dice, '#2e9e4f', MINI.pokedleDone())}
+    ${hubCard('cas-open', 'rasca', 'Raspadita diaria', 'Una gratis por día para el Casino Azulona.', rs ? `Hoy ganó ${CAS.scratchPrize()} fichas` : 'Pendiente', PIX.coin, '#e8a500', rs)}
+  </main>`;
+}
+function modosView() {
+  const best = k => records.solo[k] ? `Récord: ${records.solo[k].best}` : 'Sin récord todavía';
+  return `${screenHead('Más modos')}<main class="${F.newScreen ? 'enter' : ''} hub">
+    ${hubCard('mini-open', 'cadena', 'Cadena Pokémon', 'Contra la app: un Pokémon que empiece con la última letra del anterior.', best('cadena'), PIX.ring, '#2f6fdb')}
+    ${hubCard('mini-open', 'tipos', 'Tipo contra tipo', '30 segundos de reflejos: ¿cuánto daño le hace?', best('tipos'), AV_ICONS.rayo, '#e3350d')}
+    ${hubCard('mini-open', 'ahorcado', 'Ahorcado', 'Letra por letra antes de que la bomba se despiche.', best('ahorcado'), AV_ICONS.fantasma || PIX.pencil, '#8a4fd1')}
+  </main>`;
+}
+function screenHead(title, back = 'menu') {
+  return `<header class="hud"><div class="topline"><div class="screen-head"><button class="ibtn" data-act="${back === 'menu' ? 'menu' : `go-${back}`}" aria-label="Volver a ${BACK_NAMES[back]}">◀ <span>${BACK_NAMES[back]}</span></button><h1 class="px">${title}</h1></div><div class="tools">${soundBtn()}</div></div></header>`;
 }
 
 // Regiones por generación, para elegir de dónde salen los Pokémon.
@@ -703,7 +766,7 @@ const CAT_PRESETS = [
   ['juegos', 'Juegos e historia', ['juegos', 'historia', 'regiones', 'personajes']],
 ];
 const sameSet = (a, b) => a.length === b.length && a.every(x => b.includes(x));
-let openPanel = { fmts: false, cats: false };
+let openPanel = { fmts: false, cats: false, solo: false };
 function regionPicker(act = 'gen', presetAct = 'gens', gens = cfg.gens) {
   return `<div class="row wrap">${GEN_PRESETS.map(([k, l, g]) => tog(presetAct, k, sameSet(gens, g), l)).join('')}</div>
     <div class="togs regions">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(g => tog(act, g, gens.includes(g), `${REGIONS[g]} <small>${g}</small>`)).join('')}</div>`;
@@ -731,6 +794,7 @@ function commonSettings(type, solo = false) {
         <div class="togs">${E.ROUND_MODES.map(k => { const i = cfg.rounds.indexOf(k); return tog('round', k, i >= 0, `${i >= 0 ? `<b class="ord">${i + 1}</b> ` : ''}${E.MODES[k].name}`); }).join('')}</div>
         <p class="hint">${cfg.rounds.length ? `Se juegan en el orden en que las marque: ${cfg.rounds.map(r => E.MODES[r].name).join(', ')}.` : 'Marque al menos una ronda.'}</p>`}
       ${type === 'clasica' ? `<span class="l px">${mixed ? perTitle : solo ? 'Preguntas por ronda' : 'Preguntas por jugador y ronda'}</span><div class="togs">${perOpts.map(n => tog(solo ? 'soloPer' : 'per', n, perVal === n, n)).join('')}</div>` : ''}
+      ${type === 'clasica' && mixed && solo ? `<span class="l px">Todo o nada</span><div class="togs">${tog('allIn', 'no', !cfg.allIn, 'Sin apuesta')}${tog('allIn', 'si', !!cfg.allIn, 'Apostar en la última')}</div><p class="hint">Antes de la última pregunta ve solo el tema y apuesta los puntos que quiera.</p>` : ''}
       ${type === 'contrarreloj' ? `<span class="l px">Duración</span><div class="togs">${[30, 60, 90].map(n => tog('soloDur', n, cfg.solo.duration === n, `${n} s`)).join('')}</div>` : ''}
     </div>
     ${showCats ? `<div class="box field full">
@@ -767,19 +831,36 @@ function roscoSetupView() {
   </main>`;
 }
 
+// 1 jugador: pestañas de modo, un resumen de los ajustes y el botón de jugar siempre a mano.
+const SOLO_ICON = { clasica: 'star', supervivencia: 'corazon', contrarreloj: 'rayo' };
+function soloSummary(t) {
+  const allowed = Object.keys(E.FORMATS).filter(k => !(t === 'contrarreloj' && ['bomba', 'pokedle'].includes(k)));
+  const chosen = cfg.formats.filter(f => allowed.includes(f));
+  const fp = FMT_PRESETS.find(([, , f]) => sameSet(chosen, f.filter(x => allowed.includes(x))));
+  const gp = GEN_PRESETS.find(([, , g]) => sameSet(cfg.gens, g));
+  const rounds = t === 'clasica' && cfg.structure === 'rondas';
+  const parts = [
+    t === 'clasica' ? (rounds ? `Por rondas · ${plural(cfg.rounds.length, 'ronda', 'rondas')} de ${cfg.solo.perRound}` : `Mezclada · ${cfg.solo.perRound} preguntas`) : t === 'supervivencia' ? '3 vidas' : `${cfg.solo.duration} segundos`,
+    rounds ? null : (fp ? fp[1] : plural(chosen.length, 'formato', 'formatos')),
+    gp ? (gp[0] === 'all' ? 'Todas las regiones' : gp[1]) : cfg.gens.map(g => REGIONS[g]).join(', '),
+    t !== 'contrarreloj' ? (cfg.timer ? `${cfg.timer} s por pregunta` : 'Sin tiempo') : null,
+    t === 'clasica' && !rounds && cfg.allIn ? 'Todo o nada' : null,
+  ];
+  return parts.filter(Boolean).join(' · ');
+}
 function soloView() {
   const t = cfg.solo.type;
   const recFor = k => {
     const key = k === 'clasica' ? `clasica:${cfg.solo.perRound}:${cfg.structure === 'rondas' ? cfg.rounds.length : 'mix'}` : k === 'contrarreloj' ? `contrarreloj:${cfg.solo.duration}` : k;
-    const r = records.solo[key]; return r ? `Récord: ${fmtPts(r.best)}` : 'Sin récord todavía';
+    const r = records.solo[key]; return r ? `Su récord: ${fmtPts(r.best)}` : 'Todavía no tiene récord con estos ajustes.';
   };
-  return `${screenHead('1 jugador')}<main class="${F.newScreen ? 'enter' : ''}">
-    <div class="modes">${Object.entries(E.GAME_TYPES).filter(([k]) => k !== 'rosco').map(([k, g]) => `<button class="mode" data-act="soloType" data-val="${k}" aria-pressed="${t === k}"><b>${g.name}</b><span>${g.blurb}</span><small>${recFor(k)}</small></button>`).join('')}</div>
-    <div class="setup">
-      <div class="box field full"><span class="l px">Juega como</span><div class="row"><button class="rankchip linkchip" data-act="profile">${avatar()}<span class="px">${esc(myName())}</span><span class="hint">Cambiar</span></button></div></div>
-      ${commonSettings(t, true)}
-    </div>
-    <div class="row end">${flash ? `<span class="hint">${esc(flash)}</span>` : ''}<button class="btn" data-act="startSolo">¡Comenzar!</button></div>
+  const g = E.GAME_TYPES[t];
+  return `${screenHead('1 jugador')}<main class="${F.newScreen ? 'enter' : ''} solo">
+    <div class="segs" role="group" aria-label="Modo de juego">${['clasica', 'supervivencia', 'contrarreloj'].map(k => `<button class="seg" data-act="soloType" data-val="${k}" aria-pressed="${t === k}">${pixSvg(AV_ICONS[SOLO_ICON[k]] || PIX[SOLO_ICON[k]], 'currentColor')}<span class="px">${E.GAME_TYPES[k].name}</span></button>`).join('')}</div>
+    <div class="box modeinfo"><p class="q">${g.blurb}</p><p class="hint">${recFor(t)}</p></div>
+    <button class="summary" data-act="panel" data-val="solo" aria-expanded="${!!openPanel.solo}"><span class="px">Ajustes</span><span class="sumtxt">${esc(soloSummary(t))}</span><span class="chev" aria-hidden="true">${openPanel.solo ? '▾' : '▸'}</span></button>
+    ${openPanel.solo ? `<div class="setup">${commonSettings(t, true)}</div>` : ''}
+    <div class="playbar">${flash ? `<span class="hint">${esc(flash)}</span>` : ''}<button class="btn bigbtn" data-act="startSolo">¡Jugar!</button></div>
   </main>`;
 }
 
@@ -962,9 +1043,29 @@ function timerBar() {
   return `<div class="timer px"><span>Tiempo</span><div class="hp"><i id="tbar" style="--w:100%"></i></div><span id="tleft">${c.timer}</span></div>`;
 }
 
+// Todo o nada: se ve el tema de la última pregunta y se apuesta.
+function betView() {
+  const s = state, q = s.q, max = Math.max(0, Math.floor(s.scores[0]));
+  const amt = Math.min(max, draft.bet ?? Math.floor(max / 2));
+  const topic = q.grp ? (E.CATS[q.grp] || q.cat) : q.cat;
+  return `<main class="enter"><div class="box betbox">
+    <h2 class="px" data-tw="¡Todo o nada!">¡Todo o nada!</h2>
+    <p class="q">Última pregunta. Tema: <b>${esc(topic || 'Sorpresa')}</b> · ${esc(E.FORMATS[q.kind] || '')}</p>
+    <p class="hint">Apueste de 0 a ${max} puntos. Si acierta, los suma; si falla, los pierde.</p>
+    <div class="betamt px" id="betamt">${amt}</div>
+    <input type="range" id="bet-range" min="0" max="${max}" step="1" value="${amt}" aria-label="Puntos a apostar" ${max ? '' : 'disabled'}>
+    <div class="togs">${[['0', 'Nada'], [String(Math.floor(max / 2)), 'La mitad'], [String(max), 'Todo']].map(([v, l]) => tog('bet-amt', v, amt === +v, l)).join('')}</div>
+    <div class="row end" style="margin-top:12px"><button class="btn" data-act="bet-ok" id="nextbtn">¡Apostar ${amt}!</button></div>
+  </div></main>`;
+}
 function verdict() {
   const r = state.result;
-  const txt = r.timeout ? '¡Se acabó el tiempo!' : r.correct ? (r.streak >= 3 ? `¡Va con todo! +${fmtPts(r.points)}` : `¡JUAS! +${fmtPts(r.points)}`) : r.partial ? `¡Casi! +${fmtPts(r.points)}` : state.lives === 0 ? 'Diay, no. Sin vidas.' : 'Diay, no.';
+  if (r.bet) {
+    const miss = lineFor(MISS_LINES, state.seed, state.ri * 97 + state.qi);
+    const t = r.bet.delta > 0 ? `¡Todo o nada! +${r.bet.delta}` : r.bet.delta < 0 ? `${miss} −${-r.bet.delta}` : r.correct || r.partial ? '¡Casi! Se queda igual.' : `${miss} No apostó nada.`;
+    return `<p class="verdict px ${r.bet.delta > 0 ? 'ok' : r.bet.delta < 0 ? 'bad' : 'mid'}" data-tw="${esc(t)}">${esc(t)}</p>`;
+  }
+  const txt = r.timeout ? '¡Se acabó el tiempo!' : r.correct ? (r.streak >= 3 ? `¡Va con todo! +${fmtPts(r.points)}` : `¡JUAS! +${fmtPts(r.points)}`) : r.partial ? `¡Casi! +${fmtPts(r.points)}` : state.lives === 0 ? `${lineFor(MISS_LINES, state.seed, state.ri * 97 + state.qi)} Sin vidas.` : lineFor(MISS_LINES, state.seed, state.ri * 97 + state.qi);
   return `<p class="verdict px ${r.correct ? 'ok' : r.partial ? 'mid' : 'bad'}" data-tw="${esc(txt)}">${esc(txt)}</p>`;
 }
 
@@ -1080,7 +1181,7 @@ function pokedleView(q, rev) {
   if (!rev) {
     const last = pd.last ? `<p class="flash bad keep">${pd.last.why === 'repetido' ? 'Ya lo intentaron' : 'No es un Pokémon'}: ${esc(pd.last.text)}</p>` : '';
     return `<div class="box"><span class="hint px catl">Pokédle</span><p class="q" style="margin-top:8px">Adivine el Pokémon secreto.</p>
-      <p class="hint">Verde: igual. Amarillo: ese tipo lo tiene, pero en el otro lugar. ▲ el secreto es mayor, ▼ es menor. ${multi ? 'Se turnan; el primero que lo adivine gana el punto.' : '1 punto si lo adivinas en 3 intentos o menos; medio punto hasta 6.'}</p></div>
+      <p class="hint">Verde: igual. Amarillo: ese tipo lo tiene, pero en el otro lugar. ▲ el secreto es mayor, ▼ es menor. ${multi ? 'Se turnan; el primero que lo adivine gana el punto.' : '1 punto si lo adivina en 3 intentos o menos; medio punto hasta 6.'}</p></div>
       <div class="box field">${multi ? `<div><span class="turn px" style="--c:${pColor(pd.turn)}">Turno de ${esc(state.players[pd.turn].name)}</span></div>` : ''}
         <div class="row"><input class="input" id="typed" data-ac="pokemon" autocomplete="off" placeholder="Escriba un Pokémon" style="flex:1"><button class="btn" data-act="pd-send">Adivinar</button></div>
         ${last}<p class="hint">${plural(left, 'intento restante', 'intentos restantes')}.</p></div>${table ? `<div class="box">${table}</div>` : ''}${datalist('pokemon')}`;
@@ -1101,7 +1202,7 @@ function roscoView() {
     return `<span class="rl ${st[i]} ${i === cur && s.phase === 'rosco' ? 'cur' : ''}" style="left:${50 + 44 * Math.cos(a)}%;top:${50 + 44 * Math.sin(a)}%">${e.L}</span>`;
   }).join('');
   const L = R.last && R.last.player === p && !R.last.pass && !R.last.timeout ? R.last : null;
-  const feedback = L ? (L.ok ? (L.typo ? `<p class="flash ok keep">¡JUAS! Se escribe ${esc(L.answer)}</p>` : `<p class="flash ok keep">¡JUAS! ${esc(L.answer)}</p>`) : `<p class="flash bad keep">Diay, no. Era ${esc(L.answer)}</p>`) : '';
+  const feedback = L ? (L.ok ? (L.typo ? `<p class="flash ok keep">¡JUAS! Se escribe ${esc(L.answer)}</p>` : `<p class="flash ok keep">¡JUAS! ${esc(L.answer)}</p>`) : `<p class="flash bad keep">${lineFor(MISS_LINES, s.seed, L.idx)} Era ${esc(L.answer)}</p>`) : '';
   let panel;
   if (!R.ready) {
     const lastOther = R.last && R.last.player !== p ? R.last : null;
@@ -1145,7 +1246,8 @@ function endExtras() {
   const xp = s.players.map((p, i) => endInfo.xp?.[i] ? `${esc(p.name)} +${fmtPts(endInfo.xp[i])} XP` : '').filter(Boolean).join(' · ');
   const up = (endInfo.rankUp || []).map(u => `<p class="rankup px">¡${esc(u.name)} sube a ${esc(u.rank)}!</p>`).join('');
   const md = (endInfo.medals || []).map(m => `<div class="newmedal"><span class="mico" style="--mc:${m.medal.color}">${pixSvg(m.medal.pix, m.medal.color)}</span><span><b class="px">¡${esc(m.medal.name)}!</b><span class="hint"> ${esc(m.name)} · ${esc(m.medal.how)}</span></span></div>`).join('');
-  return `<div style="margin-top:10px">${s.config.daily ? '' : rec}</div>${xp ? `<p class="hint">${xp}</p>` : ''}${up}${md}`;
+  const chips = endInfo.fichas ? `<p class="hint">+${endInfo.fichas} fichas para el Casino Azulona</p>` : '';
+  return `<div style="margin-top:10px">${s.config.daily ? '' : rec}</div>${xp ? `<p class="hint">${xp}</p>` : ''}${chips}${up}${md}`;
 }
 
 function pregunta(q, rev) {
@@ -1555,7 +1657,7 @@ function countUp() {
 }
 
 // ---------- dibujar ----------
-const SCENIC = new Set(['menu', 'welcome', 'profile', 'solo', 'roscoSetup', 'custom', 'records', 'reports', 'daily']);
+const SCENIC = new Set(['menu', 'welcome', 'profile', 'solo', 'roscoSetup', 'custom', 'records', 'reports', 'daily', 'hoy', 'modos', 'pokedleDia', 'tipos', 'cadena', 'ahorcado', 'casino', 'c21', 'alta', 'doble', 'rasca']);
 const $bg = document.getElementById('bg');
 // «¡Pellízquese!»: aparece en los últimos 5 segundos de cualquier reloj.
 let hurryOn = false;
@@ -1582,9 +1684,13 @@ function render() {
   else if (view === 'reports') html = reportsView();
   else if (view === 'daily') html = dailyView();
   else if (view === 'welcome' || view === 'profile') html = profDraft ? profileView() : menuView();
+  else if (view === 'hoy') html = hoyView();
+  else if (view === 'modos') html = modosView();
+  else if (MINI.VIEWS[view]) html = MINI.VIEWS[view]();
+  else if (CAS.VIEWS[view]) html = CAS.VIEWS[view]();
   else {
     const p = state.phase;
-    html = hudView() + (p === 'intro' || p === 'roundEnd' ? introView() : p === 'rosco' ? roscoView() : p === 'end' ? (state.rosco ? roscoEnd() : endView()) : questionView());
+    html = hudView() + (p === 'intro' || p === 'roundEnd' ? introView() : p === 'bet' ? betView() : p === 'rosco' ? roscoView() : p === 'end' ? (state.rosco ? roscoEnd() : endView()) : questionView());
   }
   // El paisaje queda fijo detrás en el menú y las pantallas de ajustes: solo se mueve el contenido.
   const scenic = SCENIC.has(view);
@@ -1625,9 +1731,12 @@ function startGame(engineCfg) {
   clock.qKey = ''; clock.tEnd = 0; clock.tLeft = state.config.duration * 1000; clock.paused = false;
   goto('game');
 }
-function goto(v) { view = v; document.querySelectorAll('.confetti').forEach(c => c.remove()); window.scrollTo?.(0, 0); render(); }
+function goto(v) {
+  if (v !== view && ['c21', 'doble', 'alta'].includes(view)) CAS.leave();
+  if (v !== view && MINI.VIEWS[view]) MINI.stop();
+  view = v; document.querySelectorAll('.confetti').forEach(c => c.remove()); window.scrollTo?.(0, 0); render(); }
 function shared() {
-  return { structure: cfg.structure, formats: cfg.formats.slice(), rounds: E.ROUND_MODES.filter(k => cfg.rounds.includes(k)), perPlayer: cfg.perPlayer, gens: cfg.gens.slice(), cats: cfg.cats.slice(), idiomaMode: cfg.idiomaMode, timer: cfg.timer };
+  return { structure: cfg.structure, formats: cfg.formats.slice(), rounds: cfg.rounds.filter(k => E.ROUND_MODES.includes(k)), perPlayer: cfg.perPlayer, gens: cfg.gens.slice(), cats: cfg.cats.slice(), idiomaMode: cfg.idiomaMode, timer: cfg.timer, allIn: !!cfg.allIn };
 }
 
 function showAc(inp) {
@@ -1659,6 +1768,13 @@ window.visualViewport?.addEventListener('resize', () => { const a = document.act
 document.addEventListener('pointerdown', e => { if (e.target.closest('.acopt')) e.preventDefault(); });
 
 document.addEventListener('input', e => {
+  if (e.target.id === 'bet-range') {
+    draft.bet = +e.target.value;
+    const n = document.getElementById('betamt'); if (n) n.textContent = draft.bet;
+    const b = document.getElementById('nextbtn'); if (b) b.textContent = `¡Apostar ${draft.bet}!`;
+    document.querySelectorAll('[data-act=bet-amt]').forEach(t => t.setAttribute('aria-pressed', String(+t.dataset.val === draft.bet)));
+    return;
+  }
   if (e.target.dataset?.ac) showAc(e.target);
   if (e.target.id === 'flag-note' && flagCtx) { flagCtx.note = e.target.value; flagCtx.noteFocus = true; }
   const i = e.target.dataset.player;
@@ -1677,11 +1793,15 @@ document.addEventListener('click', e => {
   const toggle = (arr, x) => arr.includes(x) ? arr.filter(y => y !== x) : arr.concat(x);
   const quiet = ['ac-pick', 'answer', 'typed', 'hint', 'mute', 'press', 'bomb-send', 'ord-ok', 'pr-ok', 'mt-ok', 'r-answer', 'r-pass', 'pd-send', 'est-ok', 'r-ready'];
   if (!quiet.includes(act)) Sound.play(act === 'menu' || act === 'confirm-no' || act === 'resume' ? 'back' : 'select');
+  if (MINI.act(act, v) || CAS.act(act, v)) return;
   switch (act) {
     case 'press': Sound.play('start'); if (profile) goto('menu'); else openProfile(true); return;
     case 'profile': openProfile(false); return;
     case 'prof-color': profDraft.color = v; render(); return;
-    case 'prof-icon': profDraft.icon = v; render(); return;
+    case 'prof-icon': {
+      if (iconLocked(v)) { profDraft.lockMsg = lockHint(v); render(); return; }
+      profDraft.icon = v; profDraft.lockMsg = ''; render(); return;
+    }
     case 'prof-save': saveProfile(); return;
     case 'title': goto('title'); return;
     case 'menu': goto('menu'); return;
@@ -1709,7 +1829,14 @@ document.addEventListener('click', e => {
     case 'fmtPreset': { const p = FMT_PRESETS.find(f => f[0] === v); if (p) { cfg.formats = p[2].slice(); if (v === 'escribir') cfg.idiomaMode = 'escribir'; } break; }
     case 'catPreset': { const p = CAT_PRESETS.find(c => c[0] === v); if (p) cfg.cats = p[2].slice(); break; }
     case 'panel': openPanel[v] = !openPanel[v]; break;
-    case 'online': toast('Las mejengas en línea vienen en la próxima actualización.'); return;
+    case 'allIn': cfg.allIn = v === 'si'; break;
+    case 'bet-amt': draft.bet = +v; render(); return;
+    case 'bet-ok': { const amt = draft.bet ?? Math.floor(Math.max(0, state.scores[0]) / 2); draft.bet = null; dispatch({ type: 'BET', player: 0, value: amt, amount: amt }); return; }
+    case 'hoy': case 'go-hoy': goto('hoy'); return;
+    case 'modos': case 'go-modos': goto('modos'); return;
+    case 'casino': case 'go-casino': goto('casino'); return;
+    case 'mini-open': MINI.open(v); return;
+    case 'online': toast('Los duelos en línea vienen en la próxima actualización.'); return;
     case 'idioma': cfg.idiomaMode = v; break;
     case 'timer': cfg.timer = +v; break;
     case 'startSolo': saveCfg(); startGame({ ...shared(), type: cfg.solo.type, perPlayer: cfg.solo.perRound, duration: cfg.solo.duration, players: [myName()] }); return;
@@ -1861,6 +1988,10 @@ document.addEventListener('keydown', e => {
     if (view === 'game' && state?.phase !== 'end') { openOverlay('pause'); return; }
     if (view !== 'title' && view !== 'menu' && view !== 'game' && view !== 'welcome') { goto('menu'); return; }
   }
+  if (!overlay && (MINI.VIEWS[view])) {
+    if (e.target.matches('input') && e.key === 'Enter') { e.preventDefault(); MINI.enter(); return; }
+    if (!e.target.matches('input,textarea') && !e.ctrlKey && !e.metaKey && MINI.key(e.key)) { e.preventDefault(); return; }
+  }
   if (overlay || view !== 'game' || !state) return;
   if (e.target.matches('input,textarea')) {
     // preventDefault: si no, el mismo Enter "pulsa" el botón Siguiente que aparece después.
@@ -1872,6 +2003,16 @@ document.addEventListener('keydown', e => {
     if (k) { const btn = $app.querySelector(`.opt[data-k="${k}"]:not(:disabled)`); if (btn) { e.preventDefault(); btn.click(); } }
   }
 });
+
+// ---------- modos cortos y casino ----------
+const modApi = {
+  E, esc, store, Sound, toast, tog, plural, pixSvg, PIX, AV_ICONS, badge: id => badge(id), typePills: p => typePills(p),
+  ctx: () => ctx, view: () => view, F: () => F, render: () => render(), goto: v => goto(v), screenHead: (t, b) => screenHead(t, b),
+  records: () => records, saveRecords: () => store.save('pt-records', records), crDate: () => crDate(),
+  addFichas: n => addFichas(n), fichas: () => fichas, hurry: on => setHurry(on),
+};
+const MINI = createMinis(modApi);
+const CAS = createCasino(modApi);
 
 // ---------- arranque ----------
 async function start(saved = {}) {
