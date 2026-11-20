@@ -1,15 +1,11 @@
-// Pega aquí la configuración de tu proyecto de Firebase
-// (Consola de Firebase → Configuración del proyecto → Tus apps → SDK config).
-// Mientras esté en null, el juego funciona igual, pero los reportes y el
-// Reto del día se quedan solo en este dispositivo.
-export const firebaseConfig = null;
-
-// Ejemplo de cómo se ve (estos datos NO son reales):
-// export const firebaseConfig = {
-//   apiKey: "AIza...",
-//   authDomain: "juasmon.firebaseapp.com",
-//   projectId: "juasmon",
-//   storageBucket: "juasmon.appspot.com",
-//   messagingSenderId: "1234567890",
-//   appId: "1:1234567890:web:abc123"
-// };
+// Configuración del proyecto de Firebase de JUASmon.
+// Estos datos no son secretos: siempre van dentro de las páginas web.
+// Lo que protege la base de datos son las reglas (firestore.rules).
+export const firebaseConfig = {
+  apiKey: "AIzaSyDgPHfigK7gWWNALos5-qFVEemJQ94OLkE",
+  authDomain: "juasmon-1939.firebaseapp.com",
+  projectId: "juasmon-1939",
+  storageBucket: "juasmon-1939.firebasestorage.app",
+  messagingSenderId: "794602997383",
+  appId: "1:794602997383:web:0b4483599582bbfab49a22"
+};
