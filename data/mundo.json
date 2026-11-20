@@ -1,0 +1,1243 @@
+{
+"juegos": [
+{
+"id": "rb",
+"name": "Rojo y Azul",
+"gen": 1,
+"year": 1996,
+"platform": "Game Boy",
+"region": "Kanto",
+"kind": "principal",
+"mascots": []
+},
+{
+"id": "am",
+"name": "Amarillo",
+"gen": 1,
+"year": 1998,
+"platform": "Game Boy",
+"region": "Kanto",
+"kind": "principal",
+"mascots": [
+"Pikachu"
+]
+},
+{
+"id": "op",
+"name": "Oro y Plata",
+"gen": 2,
+"year": 1999,
+"platform": "Game Boy Color",
+"region": "Johto",
+"kind": "principal",
+"mascots": [
+"Ho-Oh",
+"Lugia"
+]
+},
+{
+"id": "cr",
+"name": "Cristal",
+"gen": 2,
+"year": 2000,
+"platform": "Game Boy Color",
+"region": "Johto",
+"kind": "principal",
+"mascots": [
+"Suicune"
+]
+},
+{
+"id": "rz",
+"name": "Rubí y Zafiro",
+"gen": 3,
+"year": 2002,
+"platform": "Game Boy Advance",
+"region": "Hoenn",
+"kind": "principal",
+"mascots": [
+"Groudon",
+"Kyogre"
+]
+},
+{
+"id": "fl",
+"name": "Rojo Fuego y Verde Hoja",
+"gen": 3,
+"year": 2004,
+"platform": "Game Boy Advance",
+"region": "Kanto",
+"kind": "remake",
+"mascots": [
+"Charizard",
+"Venusaur"
+]
+},
+{
+"id": "es",
+"name": "Esmeralda",
+"gen": 3,
+"year": 2004,
+"platform": "Game Boy Advance",
+"region": "Hoenn",
+"kind": "principal",
+"mascots": [
+"Rayquaza"
+]
+},
+{
+"id": "dp",
+"name": "Diamante y Perla",
+"gen": 4,
+"year": 2006,
+"platform": "Nintendo DS",
+"region": "Sinnoh",
+"kind": "principal",
+"mascots": [
+"Dialga",
+"Palkia"
+]
+},
+{
+"id": "pt",
+"name": "Platino",
+"gen": 4,
+"year": 2008,
+"platform": "Nintendo DS",
+"region": "Sinnoh",
+"kind": "principal",
+"mascots": [
+"Giratina"
+]
+},
+{
+"id": "hgss",
+"name": "Oro HeartGold y Plata SoulSilver",
+"gen": 4,
+"year": 2009,
+"platform": "Nintendo DS",
+"region": "Johto",
+"kind": "remake",
+"mascots": [
+"Ho-Oh",
+"Lugia"
+]
+},
+{
+"id": "nb",
+"name": "Negro y Blanco",
+"gen": 5,
+"year": 2010,
+"platform": "Nintendo DS",
+"region": "Teselia",
+"kind": "principal",
+"mascots": [
+"Reshiram",
+"Zekrom"
+]
+},
+{
+"id": "nb2",
+"name": "Negro 2 y Blanco 2",
+"gen": 5,
+"year": 2012,
+"platform": "Nintendo DS",
+"region": "Teselia",
+"kind": "principal",
+"mascots": [
+"Kyurem"
+]
+},
+{
+"id": "xy",
+"name": "X y Y",
+"gen": 6,
+"year": 2013,
+"platform": "Nintendo 3DS",
+"region": "Kalos",
+"kind": "principal",
+"mascots": [
+"Xerneas",
+"Yveltal"
+]
+},
+{
+"id": "roza",
+"name": "Rubí Omega y Zafiro Alfa",
+"gen": 6,
+"year": 2014,
+"platform": "Nintendo 3DS",
+"region": "Hoenn",
+"kind": "remake",
+"mascots": [
+"Groudon",
+"Kyogre"
+]
+},
+{
+"id": "sl",
+"name": "Sol y Luna",
+"gen": 7,
+"year": 2016,
+"platform": "Nintendo 3DS",
+"region": "Alola",
+"kind": "principal",
+"mascots": [
+"Solgaleo",
+"Lunala"
+]
+},
+{
+"id": "usul",
+"name": "Ultrasol y Ultraluna",
+"gen": 7,
+"year": 2017,
+"platform": "Nintendo 3DS",
+"region": "Alola",
+"kind": "principal",
+"mascots": [
+"Necrozma"
+]
+},
+{
+"id": "lg",
+"name": "Let's Go, Pikachu! y Let's Go, Eevee!",
+"gen": 7,
+"year": 2018,
+"platform": "Nintendo Switch",
+"region": "Kanto",
+"kind": "remake",
+"mascots": [
+"Pikachu",
+"Eevee"
+]
+},
+{
+"id": "ee",
+"name": "Espada y Escudo",
+"gen": 8,
+"year": 2019,
+"platform": "Nintendo Switch",
+"region": "Galar",
+"kind": "principal",
+"mascots": [
+"Zacian",
+"Zamazenta"
+]
+},
+{
+"id": "dbpr",
+"name": "Diamante Brillante y Perla Reluciente",
+"gen": 8,
+"year": 2021,
+"platform": "Nintendo Switch",
+"region": "Sinnoh",
+"kind": "remake",
+"mascots": [
+"Dialga",
+"Palkia"
+]
+},
+{
+"id": "la",
+"name": "Leyendas Pokémon: Arceus",
+"gen": 8,
+"year": 2022,
+"platform": "Nintendo Switch",
+"region": "Hisui",
+"kind": "leyendas",
+"mascots": [
+"Arceus"
+]
+},
+{
+"id": "ep",
+"name": "Escarlata y Púrpura",
+"gen": 9,
+"year": 2022,
+"platform": "Nintendo Switch",
+"region": "Paldea",
+"kind": "principal",
+"mascots": [
+"Koraidon",
+"Miraidon"
+]
+},
+{
+"id": "za",
+"name": "Leyendas Pokémon: Z-A",
+"gen": 9,
+"year": 2025,
+"platform": "Nintendo Switch y Switch 2",
+"region": "Kalos",
+"kind": "leyendas",
+"mascots": []
+}
+],
+"dlc": [
+{
+"id": "ia",
+"name": "La isla de la armadura",
+"base": "ee",
+"year": 2020
+},
+{
+"id": "nc",
+"name": "Las nieves de la corona",
+"base": "ee",
+"year": 2020
+},
+{
+"id": "mt",
+"name": "La máscara turquesa",
+"base": "ep",
+"year": 2023
+},
+{
+"id": "di",
+"name": "El disco índigo",
+"base": "ep",
+"year": 2023
+},
+{
+"id": "md",
+"name": "Megadimensión",
+"base": "za",
+"year": null
+}
+],
+"regiones": [
+{
+"id": "kanto",
+"name": "Kanto",
+"gen": 1,
+"insp": "Kantō (Japón)",
+"prof": "Oak",
+"profAlias": [
+"Oak"
+],
+"villain": "Team Rocket",
+"champion": "Azul",
+"champAlias": [
+"Azul"
+]
+},
+{
+"id": "johto",
+"name": "Johto",
+"gen": 2,
+"insp": "Kinki y Tōkai (Japón)",
+"prof": "Elm",
+"profAlias": [
+"Elm"
+],
+"villain": "Team Rocket",
+"champion": "Lance",
+"champAlias": [
+"Lance"
+]
+},
+{
+"id": "hoenn",
+"name": "Hoenn",
+"gen": 3,
+"insp": "Kyūshū (Japón)",
+"prof": "Abedul",
+"profAlias": [
+"Abedul"
+],
+"villain": "Team Magma y Team Aqua",
+"champion": "Máximo",
+"champAlias": [
+"Maximo",
+"Maximo Peñas",
+"Plubio"
+]
+},
+{
+"id": "sinnoh",
+"name": "Sinnoh",
+"gen": 4,
+"insp": "Hokkaidō (Japón)",
+"prof": "Serbal",
+"profAlias": [
+"Serbal"
+],
+"villain": "Equipo Galaxia",
+"champion": "Cintia",
+"champAlias": [
+"Cintia"
+]
+},
+{
+"id": "teselia",
+"name": "Teselia",
+"gen": 5,
+"insp": "Nueva York (EE. UU.)",
+"prof": "Encina",
+"profAlias": [
+"Encina"
+],
+"villain": "Equipo Plasma",
+"champion": "Mirto",
+"champAlias": [
+"Mirto",
+"Iris"
+]
+},
+{
+"id": "kalos",
+"name": "Kalos",
+"gen": 6,
+"insp": "Francia",
+"prof": "Ciprés",
+"profAlias": [
+"Cipres"
+],
+"villain": "Team Flare",
+"champion": "Dianta",
+"champAlias": [
+"Dianta"
+]
+},
+{
+"id": "alola",
+"name": "Alola",
+"gen": 7,
+"insp": "Hawái",
+"prof": "Kukui",
+"profAlias": [
+"Kukui"
+],
+"villain": "Team Skull",
+"champion": null,
+"champAlias": []
+},
+{
+"id": "galar",
+"name": "Galar",
+"gen": 8,
+"insp": "Gran Bretaña",
+"prof": "Magnolia",
+"profAlias": [
+"Magnolia"
+],
+"villain": null,
+"champion": "Lionel",
+"champAlias": [
+"Lionel"
+]
+},
+{
+"id": "paldea",
+"name": "Paldea",
+"gen": 9,
+"insp": "España",
+"prof": "Albora / Turo",
+"profAlias": [
+"Albora",
+"Turo"
+],
+"villain": null,
+"champion": "Ságita",
+"champAlias": [
+"Sagita",
+"Mencia"
+]
+},
+{
+"id": "hisui",
+"name": "Hisui",
+"gen": 8,
+"insp": "Hokkaidō antiguo (Japón)",
+"prof": "Lavender",
+"profAlias": [
+"Lavender"
+],
+"villain": null,
+"champion": null,
+"champAlias": []
+}
+],
+"lideres": [
+{
+"id": "l0",
+"name": "Brock",
+"alias": [],
+"type": 6,
+"city": "Ciudad Plateada",
+"region": "kanto",
+"order": 1,
+"note": ""
+},
+{
+"id": "l1",
+"name": "Misty",
+"alias": [],
+"type": 11,
+"city": "Ciudad Celeste",
+"region": "kanto",
+"order": 2,
+"note": ""
+},
+{
+"id": "l2",
+"name": "Teniente Surge",
+"alias": [
+"Surge",
+"Lt Surge"
+],
+"type": 13,
+"city": "Ciudad Carmín",
+"region": "kanto",
+"order": 3,
+"note": ""
+},
+{
+"id": "l3",
+"name": "Erika",
+"alias": [],
+"type": 12,
+"city": "Ciudad Azulona",
+"region": "kanto",
+"order": 4,
+"note": ""
+},
+{
+"id": "l4",
+"name": "Koga",
+"alias": [],
+"type": 4,
+"city": "Ciudad Fucsia",
+"region": "kanto",
+"order": 5,
+"note": ""
+},
+{
+"id": "l5",
+"name": "Sabrina",
+"alias": [],
+"type": 14,
+"city": "Ciudad Azafrán",
+"region": "kanto",
+"order": 6,
+"note": ""
+},
+{
+"id": "l6",
+"name": "Blaine",
+"alias": [],
+"type": 10,
+"city": "Isla Canela",
+"region": "kanto",
+"order": 7,
+"note": ""
+},
+{
+"id": "l7",
+"name": "Giovanni",
+"alias": [],
+"type": 5,
+"city": "Ciudad Verde",
+"region": "kanto",
+"order": 8,
+"note": ""
+},
+{
+"id": "l8",
+"name": "Pegaso",
+"alias": [],
+"type": 3,
+"city": "Ciudad Malva",
+"region": "johto",
+"order": 1,
+"note": ""
+},
+{
+"id": "l9",
+"name": "Antón",
+"alias": [],
+"type": 7,
+"city": "Pueblo Azalea",
+"region": "johto",
+"order": 2,
+"note": ""
+},
+{
+"id": "l10",
+"name": "Blanca",
+"alias": [],
+"type": 1,
+"city": "Ciudad Trigal",
+"region": "johto",
+"order": 3,
+"note": ""
+},
+{
+"id": "l11",
+"name": "Morti",
+"alias": [],
+"type": 8,
+"city": "Ciudad Iris",
+"region": "johto",
+"order": 4,
+"note": ""
+},
+{
+"id": "l12",
+"name": "Aníbal",
+"alias": [],
+"type": 2,
+"city": "Ciudad Orquídea",
+"region": "johto",
+"order": 5,
+"note": ""
+},
+{
+"id": "l13",
+"name": "Yasmina",
+"alias": [],
+"type": 9,
+"city": "Ciudad Olivo",
+"region": "johto",
+"order": 6,
+"note": ""
+},
+{
+"id": "l14",
+"name": "Fredo",
+"alias": [],
+"type": 15,
+"city": "Pueblo Caoba",
+"region": "johto",
+"order": 7,
+"note": ""
+},
+{
+"id": "l15",
+"name": "Débora",
+"alias": [],
+"type": 16,
+"city": "Ciudad Endrino",
+"region": "johto",
+"order": 8,
+"note": ""
+},
+{
+"id": "l16",
+"name": "Petra",
+"alias": [],
+"type": 6,
+"city": "Ciudad Férrica",
+"region": "hoenn",
+"order": 1,
+"note": ""
+},
+{
+"id": "l17",
+"name": "Marcial",
+"alias": [],
+"type": 2,
+"city": "Pueblo Azuliza",
+"region": "hoenn",
+"order": 2,
+"note": ""
+},
+{
+"id": "l18",
+"name": "Erico",
+"alias": [],
+"type": 13,
+"city": "Ciudad Malvalona",
+"region": "hoenn",
+"order": 3,
+"note": ""
+},
+{
+"id": "l19",
+"name": "Candela",
+"alias": [],
+"type": 10,
+"city": "Pueblo Lavacalda",
+"region": "hoenn",
+"order": 4,
+"note": ""
+},
+{
+"id": "l20",
+"name": "Norman",
+"alias": [],
+"type": 1,
+"city": "Ciudad Petalia",
+"region": "hoenn",
+"order": 5,
+"note": ""
+},
+{
+"id": "l21",
+"name": "Alana",
+"alias": [],
+"type": 3,
+"city": "Ciudad Arborada",
+"region": "hoenn",
+"order": 6,
+"note": ""
+},
+{
+"id": "l22",
+"name": "Vito y Leti",
+"alias": [
+"Vito",
+"Leti"
+],
+"type": 14,
+"city": "Ciudad Algaria",
+"region": "hoenn",
+"order": 7,
+"note": ""
+},
+{
+"id": "l23",
+"name": "Plubio",
+"alias": [],
+"type": 11,
+"city": "Arrecípolis",
+"region": "hoenn",
+"order": 8,
+"note": "En Esmeralda el líder es Galano."
+},
+{
+"id": "l24",
+"name": "Galano",
+"alias": [],
+"type": 11,
+"city": "Arrecípolis",
+"region": "hoenn",
+"order": null,
+"note": "Solo en Esmeralda."
+},
+{
+"id": "l25",
+"name": "Roco",
+"alias": [],
+"type": 6,
+"city": "Ciudad Pirita",
+"region": "sinnoh",
+"order": 1,
+"note": ""
+},
+{
+"id": "l26",
+"name": "Gardenia",
+"alias": [],
+"type": 12,
+"city": "Ciudad Vetusta",
+"region": "sinnoh",
+"order": 2,
+"note": ""
+},
+{
+"id": "l27",
+"name": "Brega",
+"alias": [],
+"type": 2,
+"city": "Ciudad Rocavelo",
+"region": "sinnoh",
+"order": 3,
+"note": ""
+},
+{
+"id": "l28",
+"name": "Mananti",
+"alias": [],
+"type": 11,
+"city": "Ciudad Pradera",
+"region": "sinnoh",
+"order": 4,
+"note": ""
+},
+{
+"id": "l29",
+"name": "Fantina",
+"alias": [],
+"type": 8,
+"city": "Ciudad Corazón",
+"region": "sinnoh",
+"order": 5,
+"note": ""
+},
+{
+"id": "l30",
+"name": "Acerón",
+"alias": [],
+"type": 9,
+"city": "Ciudad Canal",
+"region": "sinnoh",
+"order": 6,
+"note": ""
+},
+{
+"id": "l31",
+"name": "Inverna",
+"alias": [],
+"type": 15,
+"city": "Ciudad Puntaneva",
+"region": "sinnoh",
+"order": 7,
+"note": ""
+},
+{
+"id": "l32",
+"name": "Lectro",
+"alias": [],
+"type": 13,
+"city": "Ciudad Marina",
+"region": "sinnoh",
+"order": 8,
+"note": ""
+},
+{
+"id": "l33",
+"name": "Millo",
+"alias": [],
+"type": 12,
+"city": "Ciudad Gres",
+"region": "teselia",
+"order": 1,
+"note": "Junto a Zeo y Maíz, según el inicial que elijas."
+},
+{
+"id": "l34",
+"name": "Zeo",
+"alias": [],
+"type": 10,
+"city": "Ciudad Gres",
+"region": "teselia",
+"order": null,
+"note": ""
+},
+{
+"id": "l35",
+"name": "Maíz",
+"alias": [],
+"type": 11,
+"city": "Ciudad Gres",
+"region": "teselia",
+"order": null,
+"note": ""
+},
+{
+"id": "l36",
+"name": "Aloe",
+"alias": [],
+"type": 1,
+"city": "Ciudad Esmalte",
+"region": "teselia",
+"order": 2,
+"note": ""
+},
+{
+"id": "l37",
+"name": "Camus",
+"alias": [],
+"type": 7,
+"city": "Ciudad Porcelana",
+"region": "teselia",
+"order": 3,
+"note": ""
+},
+{
+"id": "l38",
+"name": "Camila",
+"alias": [],
+"type": 13,
+"city": "Ciudad Mayólica",
+"region": "teselia",
+"order": 4,
+"note": ""
+},
+{
+"id": "l39",
+"name": "Yakón",
+"alias": [],
+"type": 5,
+"city": "Ciudad Fayenza",
+"region": "teselia",
+"order": 5,
+"note": ""
+},
+{
+"id": "l40",
+"name": "Gerania",
+"alias": [],
+"type": 3,
+"city": "Ciudad Loza",
+"region": "teselia",
+"order": 6,
+"note": ""
+},
+{
+"id": "l41",
+"name": "Junco",
+"alias": [],
+"type": 15,
+"city": "Ciudad Teja",
+"region": "teselia",
+"order": 7,
+"note": ""
+},
+{
+"id": "l42",
+"name": "Lirio",
+"alias": [],
+"type": 16,
+"city": "Ciudad Caolín",
+"region": "teselia",
+"order": 8,
+"note": "En Pokémon Negro. En Blanco es Iris."
+},
+{
+"id": "l43",
+"name": "Iris",
+"alias": [],
+"type": 16,
+"city": "Ciudad Caolín",
+"region": "teselia",
+"order": null,
+"note": "En Pokémon Blanco. En Negro 2 y Blanco 2 es la campeona."
+},
+{
+"id": "l44",
+"name": "Cheren",
+"alias": [],
+"type": 1,
+"city": "Ciudad Engobe",
+"region": "teselia",
+"order": null,
+"note": "Negro 2 y Blanco 2."
+},
+{
+"id": "l45",
+"name": "Hiedra",
+"alias": [],
+"type": 4,
+"city": "Ciudad Hormigón",
+"region": "teselia",
+"order": null,
+"note": "Negro 2 y Blanco 2."
+},
+{
+"id": "l46",
+"name": "Ciprián",
+"alias": [],
+"type": 11,
+"city": "Ciudad Marga",
+"region": "teselia",
+"order": null,
+"note": "Negro 2 y Blanco 2."
+},
+{
+"id": "l47",
+"name": "Violeta",
+"alias": [],
+"type": 7,
+"city": "Ciudad Novarte",
+"region": "kalos",
+"order": 1,
+"note": ""
+},
+{
+"id": "l48",
+"name": "Lino",
+"alias": [],
+"type": 6,
+"city": "Ciudad Relieve",
+"region": "kalos",
+"order": 2,
+"note": ""
+},
+{
+"id": "l49",
+"name": "Corelia",
+"alias": [
+"Korrina"
+],
+"type": 2,
+"city": "Ciudad Yantra",
+"region": "kalos",
+"order": 3,
+"note": ""
+},
+{
+"id": "l50",
+"name": "Amaro",
+"alias": [],
+"type": 12,
+"city": "Ciudad Témpera",
+"region": "kalos",
+"order": 4,
+"note": ""
+},
+{
+"id": "l51",
+"name": "Lem",
+"alias": [],
+"type": 13,
+"city": "Ciudad Luminalia",
+"region": "kalos",
+"order": 5,
+"note": ""
+},
+{
+"id": "l52",
+"name": "Valeria",
+"alias": [
+"Valerie"
+],
+"type": 18,
+"city": "Ciudad Romantis",
+"region": "kalos",
+"order": 6,
+"note": ""
+},
+{
+"id": "l53",
+"name": "Ástrid",
+"alias": [],
+"type": 14,
+"city": "Ciudad Fluxus",
+"region": "kalos",
+"order": 7,
+"note": ""
+},
+{
+"id": "l54",
+"name": "Édel",
+"alias": [],
+"type": 15,
+"city": "Ciudad Fractal",
+"region": "kalos",
+"order": 8,
+"note": ""
+},
+{
+"id": "l55",
+"name": "Percy",
+"alias": [],
+"type": 12,
+"city": "Pueblo Hoyuelo",
+"region": "galar",
+"order": 1,
+"note": ""
+},
+{
+"id": "l56",
+"name": "Cathy",
+"alias": [],
+"type": 11,
+"city": "Pueblo Amura",
+"region": "galar",
+"order": 2,
+"note": ""
+},
+{
+"id": "l57",
+"name": "Naboru",
+"alias": [],
+"type": 10,
+"city": "Ciudad Pistón",
+"region": "galar",
+"order": 3,
+"note": ""
+},
+{
+"id": "l58",
+"name": "Judith",
+"alias": [],
+"type": 2,
+"city": "Pueblo Ladera",
+"region": "galar",
+"order": null,
+"note": "Solo en Espada."
+},
+{
+"id": "l59",
+"name": "Alistair",
+"alias": [],
+"type": 8,
+"city": "Pueblo Ladera",
+"region": "galar",
+"order": null,
+"note": "Solo en Escudo."
+},
+{
+"id": "l60",
+"name": "Sally",
+"alias": [],
+"type": 18,
+"city": "Pueblo Plié",
+"region": "galar",
+"order": 5,
+"note": ""
+},
+{
+"id": "l61",
+"name": "Morris",
+"alias": [],
+"type": 6,
+"city": "Pueblo Auriga",
+"region": "galar",
+"order": null,
+"note": "Solo en Espada."
+},
+{
+"id": "l62",
+"name": "Mel",
+"alias": [],
+"type": 15,
+"city": "Pueblo Auriga",
+"region": "galar",
+"order": null,
+"note": "Solo en Escudo."
+},
+{
+"id": "l63",
+"name": "Nerio",
+"alias": [],
+"type": 17,
+"city": "Pueblo Crampón",
+"region": "galar",
+"order": 7,
+"note": ""
+},
+{
+"id": "l64",
+"name": "Roy",
+"alias": [],
+"type": 16,
+"city": "Ciudad Artejo",
+"region": "galar",
+"order": 8,
+"note": ""
+},
+{
+"id": "l65",
+"name": "Araceli",
+"alias": [],
+"type": 7,
+"city": "Pueblo Pirotín",
+"region": "paldea",
+"order": null,
+"note": ""
+},
+{
+"id": "l66",
+"name": "Brais",
+"alias": [],
+"type": 12,
+"city": "Pueblo Altamía",
+"region": "paldea",
+"order": null,
+"note": ""
+},
+{
+"id": "l67",
+"name": "e-Nigma",
+"alias": [
+"Enigma"
+],
+"type": 13,
+"city": "Ciudad Leudal",
+"region": "paldea",
+"order": null,
+"note": ""
+},
+{
+"id": "l68",
+"name": "Fuco",
+"alias": [],
+"type": 11,
+"city": "Ciudad Cántara",
+"region": "paldea",
+"order": null,
+"note": ""
+},
+{
+"id": "l69",
+"name": "Laureano",
+"alias": [],
+"type": 1,
+"city": "Pueblo Mestura",
+"region": "paldea",
+"order": null,
+"note": ""
+},
+{
+"id": "l70",
+"name": "Lima",
+"alias": [],
+"type": 8,
+"city": "Pueblo Hozkailu",
+"region": "paldea",
+"order": null,
+"note": ""
+},
+{
+"id": "l71",
+"name": "Tuli",
+"alias": [],
+"type": 14,
+"city": "Pueblo Alforno",
+"region": "paldea",
+"order": null,
+"note": ""
+},
+{
+"id": "l72",
+"name": "Grusha",
+"alias": [],
+"type": 15,
+"city": "Sierra Napada",
+"region": "paldea",
+"order": null,
+"note": ""
+}
+],
+"jefes": [
+{
+"id": "b0",
+"name": "Giovanni",
+"team": "Team Rocket"
+},
+{
+"id": "b1",
+"name": "Magno",
+"team": "Team Magma"
+},
+{
+"id": "b2",
+"name": "Aquiles",
+"team": "Team Aqua"
+},
+{
+"id": "b3",
+"name": "Helio",
+"team": "Equipo Galaxia"
+},
+{
+"id": "b4",
+"name": "Ghechis",
+"team": "Equipo Plasma"
+},
+{
+"id": "b5",
+"name": "Lysson",
+"team": "Team Flare"
+},
+{
+"id": "b6",
+"name": "Guzmán",
+"team": "Team Skull"
+}
+]
+}

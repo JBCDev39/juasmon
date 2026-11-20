@@ -1,0 +1,670 @@
+[
+{
+"id": "e1",
+"fmt": "mc",
+"q": "En Oro y Plata, ¿qué edificio de Ciudad Trigal toma el Team Rocket?",
+"a": "La Torre Radio",
+"wrong": [
+"El Centro Comercial",
+"La estación del Magnetotrén",
+"El Casino"
+],
+"exp": "Lo toman para transmitir un mensaje a Giovanni."
+},
+{
+"id": "e2",
+"fmt": "mc",
+"q": "En Oro y Plata, ¿qué hace el Team Rocket en el Pozo Slowpoke?",
+"a": "Les corta la cola a los Slowpoke para venderlas",
+"wrong": [
+"Captura Unown",
+"Busca fósiles",
+"Esconde una Master Ball"
+],
+"exp": "Ocurre en Pueblo Azalea, antes del gimnasio de Antón."
+},
+{
+"id": "e3",
+"fmt": "mc",
+"q": "En Rojo y Azul, ¿qué Pokémon es el fantasma de la Torre Pokémon de Pueblo Lavanda?",
+"a": "Marowak",
+"wrong": [
+"Gengar",
+"Haunter",
+"Cubone"
+],
+"exp": "Es la madre de un Cubone, asesinada por el Team Rocket."
+},
+{
+"id": "e4",
+"fmt": "mc",
+"q": "En Rojo y Azul, ¿dónde está escondida la base del Team Rocket?",
+"a": "Debajo del Casino de Ciudad Azulona",
+"wrong": [
+"En la Torre Pokémon",
+"En la Cueva Celeste",
+"En Isla Canela"
+],
+"exp": "Hay que encontrar el interruptor detrás de un póster."
+},
+{
+"id": "e5",
+"fmt": "mc",
+"q": "En Esmeralda, ¿qué legendario despiertas para detener el combate entre Groudon y Kyogre?",
+"a": "Rayquaza",
+"wrong": [
+"Regigigas",
+"Deoxys",
+"Latios"
+],
+"exp": "Duerme en lo alto del Pilar Celeste."
+},
+{
+"id": "e6",
+"fmt": "mc",
+"q": "En Diamante y Perla, ¿dónde invoca Helio a Dialga o Palkia?",
+"a": "La Columna Lanza",
+"wrong": [
+"El Lago Valor",
+"La Torre Perdida",
+"Las Ruinas Sosiego"
+],
+"exp": "Está en la cima del Monte Corona."
+},
+{
+"id": "e7",
+"fmt": "mc",
+"q": "En Platino, ¿a qué dimensión te lleva Giratina?",
+"a": "El Mundo Distorsión",
+"wrong": [
+"El Ultraespacio",
+"El Área Cero",
+"La Dimensión Espejo"
+],
+"exp": "Allí la gravedad y el espacio funcionan distinto."
+},
+{
+"id": "e8",
+"fmt": "mc",
+"q": "En Negro y Blanco, ¿qué aparece de repente rodeando la Liga Pokémon?",
+"a": "El Castillo de N",
+"wrong": [
+"Una torre en Ciudad Caolín",
+"El barco del Equipo Plasma",
+"Un templo bajo el mar"
+],
+"exp": "N desafía al protagonista desde allí."
+},
+{
+"id": "e9",
+"fmt": "mc",
+"q": "En Negro 2 y Blanco 2, ¿qué legendario usa el Equipo Plasma para congelar Ciudad Caolín?",
+"a": "Kyurem",
+"wrong": [
+"Articuno",
+"Regice",
+"Glaceon"
+],
+"exp": "Lo controlan desde el barco del Equipo Plasma."
+},
+{
+"id": "e10",
+"fmt": "mc",
+"q": "En X y Y, ¿cuántos años tiene AZ, el hombre gigante que busca a su Floette?",
+"a": "3000 años",
+"wrong": [
+"300 años",
+"150 años",
+"1000 años"
+],
+"exp": "Fue rey de Kalos y construyó el arma definitiva."
+},
+{
+"id": "e11",
+"fmt": "mc",
+"q": "En X y Y, ¿qué quiere usar Lysson para \"salvar\" el mundo?",
+"a": "El arma definitiva",
+"wrong": [
+"La Torre Prisma",
+"Una megapiedra gigante",
+"El Tren Batalla"
+],
+"exp": "Su plan era acabar con quienes no fueran del Team Flare."
+},
+{
+"id": "e12",
+"fmt": "mc",
+"q": "En Sol y Luna, ¿qué apodo le pone Lylia a su Cosmog?",
+"a": "Nebulilla",
+"wrong": [
+"Estrellita",
+"Lunita",
+"Nube"
+],
+"exp": "Al final evoluciona en Solgaleo o Lunala."
+},
+{
+"id": "e13",
+"fmt": "mc",
+"q": "En Sol y Luna, ¿quién es la madre de Lylia y presidenta de la Fundación Æther?",
+"a": "Samina",
+"wrong": [
+"Mohn",
+"Zarala",
+"Kiawe"
+],
+"exp": "Está obsesionada con los Ultraentes."
+},
+{
+"id": "e14",
+"fmt": "mc",
+"q": "En Ultrasol y Ultraluna, ¿qué Pokémon le roba la luz a Alola?",
+"a": "Necrozma",
+"wrong": [
+"Solgaleo",
+"Lunala",
+"Marshadow"
+],
+"exp": "Termina convertido en Ultra-Necrozma."
+},
+{
+"id": "e15",
+"fmt": "mc",
+"q": "En Espada y Escudo, ¿a qué legendario despierta antes de tiempo el presidente de Macro Cosmos?",
+"a": "Eternatus",
+"wrong": [
+"Zacian",
+"Zamazenta",
+"Calyrex"
+],
+"exp": "Quería resolver la crisis energética de Galar."
+},
+{
+"id": "e16",
+"fmt": "mc",
+"q": "En La isla de la armadura, ¿qué Pokémon entrenas en el dojo de Mostaz?",
+"a": "Kubfu",
+"wrong": [
+"Riolu",
+"Mienfoo",
+"Pancham"
+],
+"exp": "Según la torre que elijas evoluciona en un Urshifu distinto."
+},
+{
+"id": "e17",
+"fmt": "mc",
+"q": "En Las nieves de la corona, ¿qué legendario quiere recuperar su poder?",
+"a": "Calyrex",
+"wrong": [
+"Regieleki",
+"Glastrier",
+"Spectrier"
+],
+"exp": "Es el rey de Galar de la antigüedad."
+},
+{
+"id": "e18",
+"fmt": "mc",
+"q": "En Escarlata y Púrpura, ¿a qué lugar de Paldea viajas al final de la historia?",
+"a": "El Área Cero",
+"wrong": [
+"La Gran Grieta del Este",
+"El Monte Napada",
+"Kitakami"
+],
+"exp": "Está en el fondo del Gran Cráter."
+},
+{
+"id": "e19",
+"fmt": "mc",
+"q": "En Escarlata y Púrpura, ¿qué resulta ser el profesor que te guía hasta el final del Área Cero?",
+"a": "Una inteligencia artificial que imita al profesor",
+"wrong": [
+"Un clon",
+"El campeón disfrazado",
+"Un Ditto transformado"
+],
+"exp": "El verdadero profesor había muerto."
+},
+{
+"id": "e20",
+"fmt": "mc",
+"q": "En La máscara turquesa, ¿cómo se llama el legendario conocido como el ogro de Kitakami?",
+"a": "Ogerpon",
+"wrong": [
+"Okidogi",
+"Munkidori",
+"Fezandipiti"
+],
+"exp": "Sus máscaras le cambian el tipo."
+},
+{
+"id": "e21",
+"fmt": "mc",
+"q": "En El disco índigo, ¿a qué academia viajas de intercambio?",
+"a": "La Academia Arándano",
+"wrong": [
+"La Academia Uva",
+"La Academia Naranja",
+"La Academia Luminalia"
+],
+"exp": "Su liga es la Liga Arándano."
+},
+{
+"id": "e22",
+"fmt": "mc",
+"q": "En Leyendas Pokémon: Arceus, ¿cómo llega el protagonista a Hisui?",
+"a": "Cae del cielo por una grieta espacio-temporal",
+"wrong": [
+"En barco desde Kalos",
+"Por un portal del Ultraespacio",
+"Es un habitante de Hisui"
+],
+"exp": "Lo envía Arceus."
+},
+{
+"id": "e23",
+"fmt": "mc",
+"q": "En Leyendas Pokémon: Z-A, ¿en qué hotel se alojan los protagonistas?",
+"a": "El Hotel Z",
+"wrong": [
+"El Hotel Luminalia",
+"El Hotel Prisma",
+"El Hotel Kalos"
+],
+"exp": "Allí los invitan a unirse al Equipo MZ."
+},
+{
+"id": "e24",
+"fmt": "mc",
+"q": "En Leyendas Pokémon: Z-A, ¿qué legendario muestra interés por el protagonista?",
+"a": "Zygarde",
+"wrong": [
+"Xerneas",
+"Yveltal",
+"Diancie"
+],
+"exp": "Aparece en Ciudad Luminalia."
+},
+{
+"id": "e25",
+"fmt": "mc",
+"q": "En Leyendas Pokémon: Z-A, ¿cómo se llama el torneo nocturno donde subes de rango?",
+"a": "Los Juegos Z-A",
+"wrong": [
+"La Copa Luminalia",
+"El Torneo de Campeones",
+"La Liga Prisma"
+],
+"exp": "Hay que ascender del rango Z al rango A."
+},
+{
+"id": "e26",
+"fmt": "mc",
+"q": "¿Cuántos años después de X y Y transcurre Leyendas Pokémon: Z-A?",
+"a": "5 años",
+"wrong": [
+"1 año",
+"10 años",
+"3000 años"
+],
+"exp": "La ciudad vive un plan de desarrollo urbanístico."
+},
+{
+"id": "e27",
+"fmt": "mc",
+"q": "En Leyendas Pokémon: Z-A, ¿cómo son los combates?",
+"a": "En tiempo real, con tiempos de recarga",
+"wrong": [
+"Por turnos, como siempre",
+"Solo combates dobles",
+"Sin combates"
+],
+"exp": "Los movimientos usan tiempos de recarga en vez de PP."
+},
+{
+"id": "e28",
+"fmt": "mc",
+"q": "En Leyendas Pokémon: Z-A, ¿qué mecánica de combate regresa?",
+"a": "La megaevolución",
+"wrong": [
+"El Dinamax",
+"Los movimientos Z",
+"La teracristalización"
+],
+"exp": "Aparecen además megaevoluciones descontroladas."
+},
+{
+"id": "v1",
+"fmt": "vf",
+"q": "En Oro y Plata, el Gyarados rojo del Lago de la Furia evolucionó a la fuerza por una señal del Team Rocket.",
+"a": true,
+"exp": "La señal salía de su escondite en Pueblo Caoba."
+},
+{
+"id": "v2",
+"fmt": "vf",
+"q": "En Rubí, el villano principal es el Team Aqua.",
+"a": false,
+"exp": "En Rubí es el Team Magma; en Zafiro, el Team Aqua."
+},
+{
+"id": "v3",
+"fmt": "vf",
+"q": "En Pokémon Amarillo, Pikachu se niega a entrar en su Poké Ball.",
+"a": true,
+"exp": "Por eso te sigue caminando."
+},
+{
+"id": "v4",
+"fmt": "vf",
+"q": "En Negro y Blanco, N es el campeón de la Liga.",
+"a": false,
+"exp": "El campeón es Mirto; N lo derrota antes que tú."
+},
+{
+"id": "v5",
+"fmt": "vf",
+"q": "En Sol y Luna hay ocho gimnasios Pokémon.",
+"a": false,
+"exp": "Alola tiene el Recorrido Insular en vez de gimnasios."
+},
+{
+"id": "v6",
+"fmt": "vf",
+"q": "Leyendas Pokémon: Z-A transcurre en Ciudad Luminalia.",
+"a": true,
+"exp": "Cinco años después de X y Y."
+},
+{
+"id": "v7",
+"fmt": "vf",
+"q": "En Espada y Escudo, Paul es el hermano menor del campeón Lionel.",
+"a": true,
+"exp": "Es tu vecino y rival."
+},
+{
+"id": "v8",
+"fmt": "vf",
+"q": "En Leyendas Pokémon: Arceus hay gimnasios Pokémon.",
+"a": false,
+"exp": "Hisui todavía no tenía Liga ni gimnasios."
+},
+{
+"id": "v9",
+"fmt": "vf",
+"q": "En Escarlata y Púrpura los gimnasios se pueden hacer en el orden que quieras.",
+"a": true,
+"exp": "Es un mundo abierto."
+},
+{
+"id": "v10",
+"fmt": "vf",
+"q": "En Diamante y Perla, la campeona Cintia usa un Garchomp.",
+"a": true,
+"exp": "Es su Pokémon más fuerte."
+},
+{
+"id": "v11",
+"fmt": "vf",
+"q": "En Oro HeartGold y Plata SoulSilver, el primer Pokémon de tu equipo te sigue caminando.",
+"a": true,
+"exp": "Igual que Pikachu en Amarillo, pero con cualquier Pokémon."
+},
+{
+"id": "v12",
+"fmt": "vf",
+"q": "En Esmeralda, el líder de gimnasio de Arrecípolis es Galano.",
+"a": true,
+"exp": "En Rubí y Zafiro es Plubio, que en Esmeralda pasa a ser campeón."
+},
+{
+"id": "v13",
+"fmt": "vf",
+"q": "En Leyendas Pokémon: Z-A los Pokémon iniciales son Chespin, Fennekin y Froakie.",
+"a": false,
+"exp": "Son Chikorita, Tepig y Totodile."
+},
+{
+"id": "o1",
+"fmt": "orden",
+"q": "Ordena estos momentos de Rojo y Azul en el orden en que ocurren.",
+"items": [
+"Recibes tu primer Pokémon del Profesor Oak",
+"Vences a Brock en Ciudad Plateada",
+"Rescatas Silph S.A. del Team Rocket",
+"Te enfrentas al Alto Mando"
+],
+"exp": ""
+},
+{
+"id": "o2",
+"fmt": "orden",
+"q": "Ordena estos momentos de Oro y Plata en el orden en que ocurren.",
+"items": [
+"El Profesor Elm te da tu primer Pokémon",
+"Vences a Blanca en Ciudad Trigal",
+"Investigas el Lago de la Furia",
+"Viajas a Kanto"
+],
+"exp": ""
+},
+{
+"id": "o3",
+"fmt": "orden",
+"q": "Ordena estas mecánicas de combate de la más antigua a la más nueva.",
+"items": [
+"Megaevolución",
+"Movimientos Z",
+"Dinamax",
+"Teracristalización"
+],
+"exp": "X y Y, Sol y Luna, Espada y Escudo, Escarlata y Púrpura."
+},
+{
+"id": "o4",
+"fmt": "orden",
+"q": "Ordena estos momentos de Escarlata y Púrpura en el orden en que ocurren.",
+"items": [
+"Te inscribes en la Academia",
+"Recorres Paldea en tu búsqueda del tesoro",
+"Viajas al Área Cero",
+"Te enfrentas al profesor en el fondo del cráter"
+],
+"exp": ""
+},
+{
+"id": "mu1",
+"fmt": "multi",
+"q": "¿Cuáles de estos son los Pokémon iniciales de Leyendas Pokémon: Z-A?",
+"right": [
+"Chikorita",
+"Tepig",
+"Totodile"
+],
+"wrong": [
+"Froakie",
+"Fennekin",
+"Chespin"
+],
+"exp": ""
+},
+{
+"id": "mu2",
+"fmt": "multi",
+"q": "¿Cuáles de estos equipos villanos aparecen en Rubí, Zafiro o Esmeralda?",
+"right": [
+"Team Magma",
+"Team Aqua"
+],
+"wrong": [
+"Equipo Galaxia",
+"Team Flare",
+"Equipo Plasma",
+"Team Skull"
+],
+"exp": ""
+},
+{
+"id": "mu3",
+"fmt": "multi",
+"q": "¿Cuáles de estos juegos tienen pase de expansión de pago?",
+"right": [
+"Espada y Escudo",
+"Escarlata y Púrpura",
+"Leyendas Pokémon: Z-A"
+],
+"wrong": [
+"Sol y Luna",
+"X y Y",
+"Negro y Blanco"
+],
+"exp": "La isla de la armadura y Las nieves de la corona; La máscara turquesa y El disco índigo; Megadimensión."
+},
+{
+"id": "z1",
+"fmt": "mc",
+"q": "En Leyendas Pokémon: Z-A, ¿a qué grupo se une el protagonista?",
+"a": "El Equipo MZ",
+"wrong": [
+"El Team Flare",
+"El Equipo Galaxia",
+"La Liga Luminalia"
+],
+"exp": "El Equipo MZ vela por la seguridad de Ciudad Luminalia y compite en los Juegos Z-A."
+},
+{
+"id": "z2",
+"fmt": "mc",
+"q": "En Leyendas Pokémon: Z-A, ¿quién administra el Hotel Z?",
+"a": "A. Z.",
+"wrong": [
+"Lysson",
+"El Profesor Ciprés",
+"Lem"
+],
+"exp": "El mismo AZ de X y Y, el antiguo rey de Kalos."
+},
+{
+"id": "z3",
+"fmt": "mc",
+"q": "En Leyendas Pokémon: Z-A, ¿qué empresa está detrás del Plan de Desarrollo Urbanístico de Ciudad Luminalia?",
+"a": "Quastelar S. A.",
+"wrong": [
+"Macro Cosmos",
+"Silph S. A.",
+"Devon S. A."
+],
+"exp": ""
+},
+{
+"id": "z4",
+"fmt": "mc",
+"q": "¿Qué día salió Leyendas Pokémon: Z-A?",
+"a": "16 de octubre de 2025",
+"wrong": [
+"28 de enero de 2022",
+"18 de noviembre de 2022",
+"14 de noviembre de 2024"
+],
+"exp": "Salió el mismo día en Japón, América, Australia y Europa."
+},
+{
+"id": "z5",
+"fmt": "mc",
+"q": "En los Juegos Z-A, ¿en qué rango empiezan los participantes?",
+"a": "Rango Z",
+"wrong": [
+"Rango A",
+"Rango S",
+"Rango 1"
+],
+"exp": "Se asciende desde el rango Z hasta el rango A."
+},
+{
+"id": "z6",
+"fmt": "vf",
+"q": "En Leyendas Pokémon: Z-A, los Juegos Z-A se celebran de noche en las calles de Ciudad Luminalia.",
+"a": true,
+"exp": ""
+},
+{
+"id": "z7",
+"fmt": "vf",
+"q": "En Leyendas Pokémon: Z-A, los movimientos gastan PP como en los demás juegos.",
+"a": false,
+"exp": "Usan un tiempo de recarga en vez de PP."
+},
+{
+"id": "z8",
+"fmt": "vf",
+"q": "En Leyendas Pokémon: Z-A, los Pokémon pueden llevar objetos y bayas equipados.",
+"a": true,
+"exp": ""
+},
+{
+"id": "z9",
+"fmt": "multi",
+"q": "¿Cuáles de estos Pokémon estrenan megaevolución en Leyendas Pokémon: Z-A?",
+"right": [
+"Clefable",
+"Victreebel",
+"Dragonite"
+],
+"wrong": [
+"Charizard",
+"Gengar",
+"Lucario"
+],
+"exp": "Charizard, Gengar y Lucario ya tenían megaevolución desde X y Y."
+},
+{
+"id": "d1",
+"fmt": "mc",
+"q": "En La isla de la armadura, ¿qué dos estilos puede adoptar Urshifu?",
+"a": "Brusco y Fluido",
+"wrong": [
+"Ofensivo y Defensivo",
+"Fuego y Agua",
+"Sol y Luna"
+],
+"exp": "Ambas formas pueden alcanzar el estado Gigamax."
+},
+{
+"id": "d2",
+"fmt": "mc",
+"q": "En Las nieves de la corona, ¿qué dos nuevos gigantes legendarios aparecen?",
+"a": "Regieleki y Regidrago",
+"wrong": [
+"Regirock y Regice",
+"Registeel y Regigigas",
+"Regice y Regidrago"
+],
+"exp": "Están hechos de energía eléctrica y de energía dragón cristalizada."
+},
+{
+"id": "d3",
+"fmt": "mc",
+"q": "En Las nieves de la corona, ¿quién te encarga liderar la exploración?",
+"a": "Peony",
+"wrong": [
+"Mostaz",
+"Lionel",
+"Rose"
+],
+"exp": ""
+},
+{
+"id": "d4",
+"fmt": "mc",
+"q": "¿En qué año salieron los dos DLC de Espada y Escudo?",
+"a": "2020",
+"wrong": [
+"2019",
+"2021",
+"2022"
+],
+"exp": "La isla de la armadura en junio y Las nieves de la corona en octubre."
+}
+]
