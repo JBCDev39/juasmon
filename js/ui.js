@@ -26,7 +26,7 @@ const RANKS = [[0, 'Novato'], [25, 'Entrenador'], [75, 'Líder de gimnasio'], [1
 const rankOf = xp => { let r = RANKS[0]; for (const x of RANKS) if (xp >= x[0]) r = x; const i = RANKS.indexOf(r); return { name: r[1], next: RANKS[i + 1] || null, i }; };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
-const APP_VERSION = 7;
+const APP_VERSION = 8;
 const FLAG_REASONS = ['La respuesta está mal', 'La pregunta no tiene sentido o es confusa', 'Un nombre o dato está mal escrito', 'Es demasiado fácil o difícil', 'Otro'];
 const FLAG_SVG = '<svg class="flagico" viewBox="0 0 10 12" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="0" width="1" height="12" fill="currentColor"/><rect x="2" y="1" width="6" height="1" fill="var(--red)"/><rect x="2" y="2" width="7" height="3" fill="var(--red)"/><rect x="2" y="5" width="5" height="1" fill="var(--red)"/></svg>';
 const store = {
@@ -87,6 +87,71 @@ const MEDALS = [
 const crDate = (d = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Costa_Rica', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 let daily = store.load('pt-daily', {});
 let dailyBoard = null, userId = null;
+
+// ---------- perfil del entrenador (uno por teléfono) ----------
+const AV_COLORS = ['#e3350d', '#2f6fdb', '#2e9e4f', '#ffcb05', '#8a4fd1', '#e8722a', '#e05a9b', '#2bb5b8'];
+const AV_ICONS = {
+  estrella: ['.....##.....', '.....##.....', '....####....', '############', '.##########.', '..########..', '...######...', '..###..###..', '.###....###.', '.##......##.', '............', '............'],
+  rayo: ['......####..', '.....####...', '....####....', '...####.....', '..#########.', '..#########.', '......####..', '.....####...', '....###.....', '...###......', '..##........', '............'],
+  llama: ['.....#......', '.....##.....', '....###.....', '....####....', '...#####.#..', '..#######...', '..########..', '.#########..', '.####.####..', '.###...###..', '..##...##...', '...#####....'],
+  gota: ['.....##.....', '.....##.....', '....####....', '....####....', '...######...', '..########..', '..########..', '.##########.', '.###.######.', '.###.######.', '..########..', '...######...'],
+  hoja: ['.......#####', '.....#######', '....########', '...#######.#', '..######..##', '..#####..###', '.####...####', '.###..######', '.##..######.', '.#.#######..', '#..#####....', '#...........'],
+  luna: ['....####....', '..#####.....', '.#####......', '.####.......', '####........', '####........', '####........', '####........', '.####.......', '.######...#.', '..########..', '....####....'],
+  corona: ['............', '#....##....#', '##..####..##', '###.####.###', '############', '############', '############', '.##########.', '.##########.', '............', '.##########.', '............'],
+  corazon: ['............', '.###....###.', '#####..#####', '############', '############', '############', '.##########.', '..########..', '...######...', '....####....', '.....##.....', '............'],
+};
+let profile = store.load('pt-profile', null);
+let profDraft = null;
+const myName = () => profile?.name || cfg.solo.name.trim() || 'Rojo';
+function avatar(p = profile, cls = '') {
+  const icon = AV_ICONS[p?.icon] ? p.icon : 'estrella', color = p?.color || AV_COLORS[0];
+  return `<span class="avatar ${cls}" style="--av:${color}">${pixSvg(AV_ICONS[icon], '#1d2321')}</span>`;
+}
+// Cambiar de nombre: la XP, los duelos y las medallas se pasan al nombre nuevo.
+function renameRecords(from, to) {
+  if (!from || from === to) return;
+  if (records.xp[from] !== undefined) { records.xp[to] = (records.xp[to] || 0) + records.xp[from]; delete records.xp[from]; }
+  if (records.duels[from] !== undefined) { records.duels[to] = (records.duels[to] || 0) + records.duels[from]; delete records.duels[from]; }
+  if (records.medals?.[from]) { records.medals[to] = [...new Set([...(records.medals[to] || []), ...records.medals[from]])]; delete records.medals[from]; }
+  store.save('pt-records', records);
+}
+function openProfile(first) {
+  profDraft = { name: profile?.name ?? (cfg.solo.name.trim() || ''), color: profile?.color || AV_COLORS[Math.floor(Math.random() * AV_COLORS.length)], icon: profile?.icon || 'estrella', first, warn: '' };
+  goto(first ? 'welcome' : 'profile');
+  if (dbRef) loadDailyBoard();
+}
+function saveProfile() {
+  const name = profDraft.name.trim().replace(/\s+/g, ' ').slice(0, 16);
+  if (!name) { profDraft.warn = 'Escribe un nombre para continuar.'; render(); document.getElementById('prof-name')?.focus(); return; }
+  const taken = (dailyBoard || []).some(r => E.normalize(r.name) === E.normalize(name) && r.id && r.id !== userId);
+  if (taken && profDraft.warn !== 'taken:' + name) { profDraft.warn = 'taken:' + name; render(); return; }
+  const old = profile?.name || cfg.solo.name.trim();
+  renameRecords(old, name);
+  for (const list of [cfg.players, cfg.rosco.players]) if (list[0] === old || list[0] === 'Rojo' || !list[0]?.trim()) list[0] = name;
+  cfg.solo.name = name; saveCfg();
+  profile = { name, color: profDraft.color, icon: profDraft.icon, at: profile?.at || Date.now() };
+  store.save('pt-profile', profile);
+  const first = profDraft.first; profDraft = null;
+  Sound.play(first ? 'start' : 'select');
+  goto('menu');
+  if (first) toast(`¡Bienvenido, ${name}!`);
+}
+function profileView() {
+  const d = profDraft, first = d.first;
+  const warn = d.warn.startsWith('taken:') ? `Ese nombre ya lo usa otro entrenador en la tabla de hoy. Toca «${first ? '¡Listo!' : 'Guardar'}» otra vez si igual lo quieres.` : d.warn;
+  const head = first ? `<div class="welcome-head"><span class="wm2 px"><b>JUAS</b><i>mon</i></span></div>` : screenHead('Mi perfil');
+  return `${head}<main class="${F.newScreen ? 'enter' : ''} profile">
+    <div class="box"><p class="q" ${first ? `data-tw="${esc('¿Cómo te llamas, entrenador?')}"` : ''}>${first ? '¿Cómo te llamas, entrenador?' : 'Tu nombre en este teléfono'}</p>
+      <p class="hint">${first ? 'Este teléfono te recordará. Lo puedes cambiar cuando quieras tocando tu nombre en el menú.' : 'Si lo cambias, tu XP, tus duelos y tus medallas se pasan al nombre nuevo.'}</p>
+      <div class="row" style="margin-top:10px">${avatar(d, 'big')}<input class="input" id="prof-name" data-prof-name="1" value="${esc(d.name)}" maxlength="16" autocomplete="off" placeholder="Tu nombre" style="flex:1"></div>
+      ${warn ? `<p class="flash bad keep">${esc(warn)}</p>` : ''}</div>
+    <div class="setup">
+      <div class="box field"><span class="l px">Color</span><div class="swatches">${AV_COLORS.map(c => `<button class="swatch" data-act="prof-color" data-val="${c}" style="--av:${c}" aria-pressed="${d.color === c}" aria-label="Color ${c}"></button>`).join('')}</div></div>
+      <div class="box field"><span class="l px">Ícono</span><div class="swatches">${Object.keys(AV_ICONS).map(k => `<button class="iconpick" data-act="prof-icon" data-val="${k}" aria-pressed="${d.icon === k}" aria-label="${k}">${avatar({ ...d, icon: k })}</button>`).join('')}</div></div>
+    </div>
+    <div class="row end"><button class="btn" data-act="prof-save">${first ? '¡Listo!' : 'Guardar'}</button></div>
+  </main>`;
+}
 
 const PIX = {
   star: ['.....##.....', '.....##.....', '....####....', '############', '.##########.', '..########..', '...######...', '..###..###..', '.###....###.', '.##......##.', '............', '............'],
@@ -175,8 +240,32 @@ let installEvt = null;
 const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (view === 'menu') render(); });
 window.addEventListener('appinstalled', () => { installEvt = null; toast('¡JUASmon instalado!'); if (view === 'menu') render(); });
+// Versión nueva: el teléfono la descarga de fondo y aquí se avisa para actualizar.
 if ('serviceWorker' in navigator && window.isSecureContext && !window.claude && window.self === window.top) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloading) { reloading = true; location.reload(); } });
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    if (reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
+    reg.addEventListener('updatefound', () => {
+      const w = reg.installing;
+      w?.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) showUpdate(w); });
+    });
+    // Revisa si hay versión nueva al volver a la app.
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+  }).catch(() => {});
+}
+function showUpdate(worker) {
+  if (document.querySelector('.update')) return;
+  const bar = document.createElement('div');
+  bar.className = 'update px';
+  bar.innerHTML = '<span>¡Hay una versión nueva de JUASmon!</span><button class="btn">Actualizar</button>';
+  bar.querySelector('button').addEventListener('click', () => {
+    bar.querySelector('button').disabled = true;
+    // La partida en curso ya está guardada; al recargar aparece en «Continuar partida».
+    try { if (view === 'game' && state) persist(); } catch { }
+    worker.postMessage('SKIP_WAITING');
+  });
+  document.body.appendChild(bar);
 }
 async function syncReports() {
   if (!dbRef) return;
@@ -348,7 +437,7 @@ function recordDaily(s) {
   store.save('pt-daily', daily);
   if (dbRef) {
     const id = (userId || E.normalize(s.players[0].name) || 'anon').replace(/[^A-Za-z0-9_.~:@+-]/g, '').slice(0, 60) || 'anon';
-    dbRef.collection(`retos/${date}/puntajes`).doc(id).set({ name: s.players[0].name.slice(0, 24), score: s.scores[0], right, at: Date.now() }).then(loadDailyBoard).catch(() => {});
+    dbRef.collection(`retos/${date}/puntajes`).doc(id).set({ name: s.players[0].name.slice(0, 24), score: s.scores[0], right, at: Date.now(), color: profile?.color || AV_COLORS[0], icon: profile?.icon || 'estrella' }).then(loadDailyBoard).catch(() => {});
   }
 }
 function dailyStreak() {
@@ -361,16 +450,17 @@ async function loadDailyBoard() {
   if (!dbRef) return;
   try {
     const snap = await dbRef.collection(`retos/${crDate()}/puntajes`).orderBy('score', 'desc').limit(50).get();
-    dailyBoard = snap.docs.map(d => d.data());
+    dailyBoard = snap.docs.map(d => ({ ...d.data(), id: d.id }));
   } catch { dailyBoard = null; }
   if (view === 'daily' || (view === 'game' && state?.config.daily)) render();
+  else if ((view === 'welcome' || view === 'profile') && profDraft?.warn) render();
 }
 function startDaily() {
   const date = crDate();
   const saved = store.load('pt-save', null);
   if (saved?.state?.config.daily === date) { rebuildCtx(true); state = saved.state; last.scores = state.scores.slice(); clock.qKey = ''; clock.paused = false; goto('game'); return; }
   rebuildCtx(true);
-  state = E.createGame(E.dailyConfig(date, cfg.solo.name.trim() || 'Rojo'), E.dailySeed(date), {});
+  state = E.createGame(E.dailyConfig(date, myName()), E.dailySeed(date), {});
   last.scores = []; endInfo = { newRecord: false, prev: null };
   clock.qKey = ''; clock.tEnd = 0; clock.paused = false;
   goto('game');
@@ -379,7 +469,7 @@ function boardHtml() {
   if (!dbRef) return '<p class="hint">La tabla compartida no está disponible ahora. Tu resultado se guardó en este dispositivo.</p>';
   if (!dailyBoard) return '<p class="hint">Cargando la tabla del día…</p>';
   if (!dailyBoard.length) return '<p class="hint">Nadie ha terminado el reto de hoy todavía.</p>';
-  return `<ol class="olist plain board">${dailyBoard.map((r, i) => `<li class="ok"><span class="num px">${i + 1}</span><span class="tx">${esc(r.name)}</span><span class="mark px">${fmtPts(r.score)} / 10</span></li>`).join('')}</ol>`;
+  return `<ol class="olist plain board">${dailyBoard.map((r, i) => `<li class="ok"><span class="num px">${i + 1}</span><span class="tx">${avatar(r, 'sm')} ${esc(r.name)}${r.id && r.id === userId ? ' <small class="hint">(tú)</small>' : ''}</span><span class="mark px">${fmtPts(r.score)} / 10</span></li>`).join('')}</ol>`;
 }
 function dailyView() {
   const date = crDate(), mine = daily[date];
@@ -417,10 +507,10 @@ function menuView() {
     const what = s.config.type === 'clasica' ? (E.isMixed(s) ? `Pregunta ${s.qi + 1} de ${E.questionsPerRound(s)}` : `Ronda ${s.ri + 1} de ${s.config.rounds.length}`) : E.GAME_TYPES[s.config.type].name;
     cont = cart('continue', 'Continuar partida', `${what} · ${who}`, 'play', 'var(--yellow)', 0, true);
   }
-  const me = cfg.solo.name.trim() || 'Rojo', xp = records.xp[me] || 0, rk = rankOf(xp);
+  const me = myName(), xp = records.xp[me] || 0, rk = rankOf(xp);
   return `<div class="menu-screen">${scene()}<div class="menu-inner">
     <div class="row between"><button class="mini-wm" data-act="title"><b>JUAS</b><i>mon</i></button>${soundBtn()}</div>
-    <div class="row"><div class="rankchip"><span class="px">${esc(me)}</span><span>Rango: <b>${rk.name}</b> · ${fmtPts(xp)} XP${rk.next ? ` · faltan ${fmtPts(rk.next[0] - xp)} para ${rk.next[1]}` : ''}</span></div>
+    <div class="row"><button class="rankchip linkchip" data-act="profile" aria-label="Mi perfil">${avatar()}<span class="px">${esc(me)}</span><span>Rango: <b>${rk.name}</b> · ${fmtPts(xp)} XP${rk.next ? ` · faltan ${fmtPts(rk.next[0] - xp)} para ${rk.next[1]}` : ''}</span></button>
       <button class="rankchip linkchip" data-act="reports">${FLAG_SVG}<span>Reportes${reports.length ? ` (${reports.length})` : ''}</span></button>
       ${installEvt && !standalone() ? '<button class="rankchip linkchip install" data-act="install"><span>⬇ Instalar app</span></button>' : ''}</div>
     <div class="carts">${cont}
@@ -504,7 +594,7 @@ function soloView() {
   return `${screenHead('1 jugador')}<main class="${F.newScreen ? 'enter' : ''}">
     <div class="modes">${Object.entries(E.GAME_TYPES).filter(([k]) => k !== 'rosco').map(([k, g]) => `<button class="mode" data-act="soloType" data-val="${k}" aria-pressed="${t === k}"><b>${g.name}</b><span>${g.blurb}</span><small>${recFor(k)}</small></button>`).join('')}</div>
     <div class="setup">
-      <div class="box field full"><label class="field"><span class="l px">Tu nombre</span><input class="input" id="solo-name" data-solo-name="1" value="${esc(cfg.solo.name)}" maxlength="16"></label></div>
+      <div class="box field full"><span class="l px">Juegas como</span><div class="row"><button class="rankchip linkchip" data-act="profile">${avatar()}<span class="px">${esc(myName())}</span><span class="hint">Cambiar</span></button></div></div>
       ${commonSettings(t, true)}
     </div>
     <div class="row end">${flash ? `<span class="hint">${esc(flash)}</span>` : ''}<button class="btn" data-act="startSolo">¡Comenzar!</button></div>
@@ -583,8 +673,8 @@ function recordsView() {
           <p class="hint">Cada punto que ganas suma 1 XP. Rangos: ${RANKS.map(r => `${r[1]} (${r[0]})`).join(' → ')}.</p><p class="hint">${plural(records.games || 0, 'partida jugada', 'partidas jugadas')} en multijugador. Los empates no cuentan como duelo ganado.</p>` : '<p class="hint">Juega una partida para estrenar la tabla.</p>'}
       </div>
     </div>
-    <div class="box field"><span class="l px">Medallas de ${esc(cfg.solo.name.trim() || 'Rojo')}</span>${medalsHtml(cfg.solo.name.trim() || 'Rojo')}
-      ${Object.keys(records.medals || {}).filter(n => n !== (cfg.solo.name.trim() || 'Rojo')).map(n => `<p class="hint">${esc(n)}: ${(records.medals[n] || []).length} de 8 medallas.</p>`).join('')}</div>
+    <div class="box field"><span class="l px">Medallas de ${esc(myName())}</span>${medalsHtml(myName())}
+      ${Object.keys(records.medals || {}).filter(n => n !== (myName())).map(n => `<p class="hint">${esc(n)}: ${(records.medals[n] || []).length} de 8 medallas.</p>`).join('')}</div>
     <div class="row end"><button class="btn ghost" data-act="ask-reset">Borrar récords</button></div>
   </main>`;
 }
@@ -1283,6 +1373,7 @@ function render() {
   else if (view === 'roscoSetup') html = roscoSetupView();
   else if (view === 'reports') html = reportsView();
   else if (view === 'daily') html = dailyView();
+  else if (view === 'welcome' || view === 'profile') html = profDraft ? profileView() : menuView();
   else {
     const p = state.phase;
     html = hudView() + (p === 'intro' || p === 'roundEnd' ? introView() : p === 'rosco' ? roscoView() : p === 'end' ? (state.rosco ? roscoEnd() : endView()) : questionView());
@@ -1359,7 +1450,7 @@ document.addEventListener('input', e => {
   if (e.target.id === 'flag-note' && flagCtx) { flagCtx.note = e.target.value; flagCtx.noteFocus = true; }
   const i = e.target.dataset.player;
   if (i !== undefined) { cfg.players[+i] = e.target.value; saveCfg(); }
-  if (e.target.dataset.soloName) { cfg.solo.name = e.target.value; saveCfg(); }
+  if (e.target.dataset.profName && profDraft) { profDraft.name = e.target.value; if (profDraft.warn) { profDraft.warn = ''; e.target.closest('.box')?.querySelector('.flash')?.remove(); } }
   const ri = e.target.dataset.rplayer;
   if (ri !== undefined) { cfg.rosco.players[+ri] = e.target.value; saveCfg(); }
 });
@@ -1374,7 +1465,11 @@ document.addEventListener('click', e => {
   const quiet = ['ac-pick', 'answer', 'typed', 'hint', 'mute', 'press', 'bomb-send', 'ord-ok', 'pr-ok', 'mt-ok', 'r-answer', 'r-pass', 'pd-send', 'est-ok', 'r-ready'];
   if (!quiet.includes(act)) Sound.play(act === 'menu' || act === 'confirm-no' || act === 'resume' ? 'back' : 'select');
   switch (act) {
-    case 'press': Sound.play('start'); goto('menu'); return;
+    case 'press': Sound.play('start'); if (profile) goto('menu'); else openProfile(true); return;
+    case 'profile': openProfile(false); return;
+    case 'prof-color': profDraft.color = v; render(); return;
+    case 'prof-icon': profDraft.icon = v; render(); return;
+    case 'prof-save': saveProfile(); return;
     case 'title': goto('title'); return;
     case 'menu': goto('menu'); return;
     case 'mute': if (!v || (v === 'off') !== Sound.muted) Sound.toggle(); render(); if (overlay) renderOverlay(); return;
@@ -1400,7 +1495,7 @@ document.addEventListener('click', e => {
     case 'gens': cfg.gens = v === 'all' ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : [1, 2, 3]; break;
     case 'idioma': cfg.idiomaMode = v; break;
     case 'timer': cfg.timer = +v; break;
-    case 'startSolo': saveCfg(); startGame({ ...shared(), type: cfg.solo.type, perPlayer: cfg.solo.perRound, duration: cfg.solo.duration, players: [cfg.solo.name.trim() || 'Rojo'] }); return;
+    case 'startSolo': saveCfg(); startGame({ ...shared(), type: cfg.solo.type, perPlayer: cfg.solo.perRound, duration: cfg.solo.duration, players: [myName()] }); return;
     case 'startMulti': saveCfg(); startGame({ ...shared(), type: 'clasica', players: cfg.players.map((n, i) => n.trim() || `Jugador ${i + 1}`) }); return;
     case 'soloCfg': goto('solo'); return;
     case 'roscoSetup': goto('roscoSetup'); return;
@@ -1541,12 +1636,13 @@ document.addEventListener('click', e => {
 
 document.addEventListener('keydown', e => {
   if (typers.length && (e.key === 'Enter' || e.key === ' ')) finishTyping();
-  if (view === 'title' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); Sound.play('start'); goto('menu'); return; }
+  if (view === 'title' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); Sound.play('start'); if (profile) goto('menu'); else openProfile(true); return; }
+  if ((view === 'welcome' || view === 'profile') && e.key === 'Enter' && e.target.id === 'prof-name') { e.preventDefault(); saveProfile(); return; }
   if (e.key === 'Escape') {
     if (overlay === 'pause' || overlay === 'settings' || overlay === 'flag') { closeOverlay(); return; }
     if (overlay) { if (overlay === 'confirm-reset') closeOverlay(); else openOverlay('pause'); return; }
     if (view === 'game' && state?.phase !== 'end') { openOverlay('pause'); return; }
-    if (view !== 'title' && view !== 'menu' && view !== 'game') { goto('menu'); return; }
+    if (view !== 'title' && view !== 'menu' && view !== 'game' && view !== 'welcome') { goto('menu'); return; }
   }
   if (overlay || view !== 'game' || !state) return;
   if (e.target.matches('input,textarea')) {

@@ -354,6 +354,23 @@ body.kb .rosco-wrap{gap:0}
 @media(max-width:640px){.menu{grid-template-columns:minmax(0,1fr)}.setup{grid-template-columns:minmax(0,1fr)}.vs{grid-template-columns:minmax(0,1fr)}.vsmark{text-align:center}.box{padding:18px 16px}.carts{grid-template-columns:minmax(0,1fr)}.clue{grid-template-columns:minmax(0,1fr)}.clue .s{grid-column:1}.brand{font-size:10px}.ibtn span{display:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 .linkchip.install{background:var(--yellow);color:#1d2321;border-color:#1d2321}
+/* perfil del entrenador */
+.avatar{display:inline-grid;place-items:center;flex:none;width:30px;height:30px;border-radius:7px;background:var(--av);border:2px solid #1d2321;box-shadow:0 2px 0 #1d2321}
+.avatar svg{width:70%;height:70%}
+.avatar.big{width:56px;height:56px;border-radius:12px;border-width:3px;box-shadow:0 4px 0 #1d2321}
+.avatar.sm{width:22px;height:22px;border-radius:5px;vertical-align:middle;box-shadow:none}
+.swatches{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.swatch{width:42px;height:42px;border-radius:10px;background:var(--av);border:3px solid #1d2321;cursor:pointer;transition:transform .12s}
+.swatch[aria-pressed=true],.iconpick[aria-pressed=true]{box-shadow:0 0 0 4px var(--yellow);transform:translateY(-2px)}
+.iconpick{padding:0;border:0;background:none;border-radius:9px;cursor:pointer;transition:transform .12s}
+.iconpick .avatar{width:42px;height:42px;border-radius:9px}
+.welcome-head{display:flex;justify-content:center;padding:28px 0 6px;background:var(--red);border-bottom:6px solid #1d2321}
+.welcome-head .wm2{font-size:clamp(26px,7vw,46px);animation:none;text-shadow:0 4px 0 #1d2321}.welcome-head .wm2 i{text-shadow:0 3px 0 #1d2321}
+.profile .input{font-size:20px}
+/* aviso de versión nueva */
+.update{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:12px;background:#1d2321;color:#fff;padding:10px 12px 10px 16px;border-radius:12px;border:2px solid var(--yellow);box-shadow:0 6px 0 rgba(0,0,0,.25);animation:slide-up .3s both;max-width:calc(100vw - 24px)}
+.update span{font-size:10px;line-height:1.6}
+.update .btn{padding:10px 12px;font-size:10px;white-space:nowrap}
 .typo{margin:4px 0 8px;font-size:15px;color:var(--ink)}.typo b:first-child{color:#e3350d;font-family:'Press Start 2P',monospace;font-size:11px;margin-right:4px}
 </style>
 </head>

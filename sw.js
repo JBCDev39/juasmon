@@ -1,7 +1,7 @@
 // Service worker de JUASmon: guarda el juego en el teléfono para que
 // abra rápido y se pueda jugar sin internet (1 jugador, multijugador local, rosco).
 // Al publicar una versión nueva, cambia VERSION para que los teléfonos la descarguen.
-const VERSION = 'juasmon-v7';
+const VERSION = 'juasmon-v8';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './js/ui.js', './js/engine.js', './js/preguntas.js', './js/rosco.js', './js/util.js', './js/nube.js', './js/firebase-config.js',
@@ -10,8 +10,10 @@ const SHELL = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // No se activa sola: espera a que el jugador toque «Actualizar».
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))));
 });
+self.addEventListener('message', e => { if (e.data === 'SKIP_WAITING') self.skipWaiting(); });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
@@ -27,10 +29,12 @@ self.addEventListener('fetch', e => {
     return;
   }
   if (url.origin !== location.origin) return;
-  // Archivos del juego: primero lo guardado; de fondo se busca la versión nueva.
+  // Archivos del juego: siempre los de esta versión, así nunca se mezclan dos versiones.
   e.respondWith(caches.open(VERSION).then(async c => {
     const hit = await c.match(req, { ignoreSearch: true });
-    const net = fetch(req).then(r => { if (r.ok) c.put(req, r.clone()); return r; }).catch(() => hit);
-    return hit || net;
+    if (hit) return hit;
+    const r = await fetch(req);
+    if (r.ok) c.put(req, r.clone());
+    return r;
   }));
 });
