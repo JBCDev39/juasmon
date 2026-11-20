@@ -245,16 +245,16 @@ if ('serviceWorker' in navigator && window.isSecureContext && !window.claude && 
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloading) { reloading = true; location.reload(); } });
   navigator.serviceWorker.register('./sw.js').then(reg => {
-    if (reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
+    if (reg.waiting && navigator.serviceWorker.controller) showUpdate(reg);
     reg.addEventListener('updatefound', () => {
       const w = reg.installing;
-      w?.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) showUpdate(w); });
+      w?.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) showUpdate(reg); });
     });
     // Revisa si hay versión nueva al volver a la app.
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
   }).catch(() => {});
 }
-function showUpdate(worker) {
+function showUpdate(reg) {
   if (document.querySelector('.update')) return;
   const bar = document.createElement('div');
   bar.className = 'update px';
@@ -263,7 +263,10 @@ function showUpdate(worker) {
     bar.querySelector('button').disabled = true;
     // La partida en curso ya está guardada; al recargar aparece en «Continuar partida».
     try { if (view === 'game' && state) persist(); } catch { }
-    worker.postMessage('SKIP_WAITING');
+    // Siempre la versión en espera más reciente (puede haber llegado otra mientras tanto).
+    const w = reg.waiting;
+    if (w) w.postMessage('SKIP_WAITING'); else location.reload();
+    setTimeout(() => location.reload(), 4000);
   });
   document.body.appendChild(bar);
 }
