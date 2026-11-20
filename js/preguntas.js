@@ -145,36 +145,36 @@ add('pokemon', 'vf', (ctx, s, r, P, L) => {
 add('pokemon', 'orden', (ctx, s, r, P, L) => {
   const p = r.pick(L.filter(x => x.from && ctx.byId.get(x.from).from)); if (!p) return null;
   const mid = ctx.byId.get(p.from), base = ctx.byId.get(mid.from);
-  return ordenQ(r, 'Evoluciones', 'Ordena esta línea evolutiva, de la primera etapa a la última.', [{ text: base.name }, { text: mid.name }, { text: p.name }], '', { ids: [p.id] });
+  return ordenQ(r, 'Evoluciones', 'Ordene esta línea evolutiva, de la primera etapa a la última.', [{ text: base.name }, { text: mid.name }, { text: p.name }], '', { ids: [p.id] });
 });
 add('pokemon', 'orden', (ctx, s, r, P, L) => {
   const [label, get] = r.pick(statsNoUnit);
   const four = distinctBy(r.shuffle(L), get, 4); if (!four) return null;
   four.sort((a, b) => get(a) - get(b));
-  return ordenQ(r, 'Estadísticas', `Ordena de menor a mayor ${label.toLowerCase()} base.`, four.map(x => ({ text: x.name, note: String(get(x)) })), '', { ids: four.map(x => x.id) });
+  return ordenQ(r, 'Estadísticas', `Ordene de menor a mayor ${label.toLowerCase()} base.`, four.map(x => ({ text: x.name, note: String(get(x)) })), '', { ids: four.map(x => x.id) });
 });
 add('pokemon', 'orden', (ctx, s, r, P, L) => {
   const four = distinctBy(r.shuffle(L), x => x.w, 4); if (!four) return null;
   four.sort((a, b) => a.w - b.w);
-  return ordenQ(r, 'Estadísticas', 'Ordena del más liviano al más pesado.', four.map(x => ({ text: x.name, note: `${(x.w / 10).toLocaleString('es')} kg` })), '', { ids: four.map(x => x.id) });
+  return ordenQ(r, 'Estadísticas', 'Ordene del más liviano al más pesado.', four.map(x => ({ text: x.name, note: `${(x.w / 10).toLocaleString('es')} kg` })), '', { ids: four.map(x => x.id) });
 });
 add('pokemon', 'orden', (ctx, s, r, P, L) => {
   const four = distinctBy(r.shuffle(ctx.pokemon), x => x.gen, 4); if (!four) return null;
   four.sort((a, b) => a.gen - b.gen);
-  return ordenQ(r, 'Datos', 'Ordena por generación, de la más antigua a la más nueva.', four.map(x => ({ text: x.name, note: `Gen ${x.gen}` })), '', { ids: four.map(x => x.id) });
+  return ordenQ(r, 'Datos', 'Ordene por generación, de la más antigua a la más nueva.', four.map(x => ({ text: x.name, note: `Gen ${x.gen}` })), '', { ids: four.map(x => x.id) });
 });
 // --- Pokémon: emparejar ---
 add('pokemon', 'pares', (ctx, s, r, P, L) => {
   const four = distinctBy(r.shuffle(L.filter(x => x.types.length === 1)), x => x.types[0], 4); if (!four) return null;
-  return paresQ(r, 'Datos', 'Une cada Pokémon con su tipo.', four.map(x => [x.name, tn(ctx, x.types[0])]), '', { ids: four.map(x => x.id) });
+  return paresQ(r, 'Datos', 'Una cada Pokémon con su tipo.', four.map(x => [x.name, tn(ctx, x.types[0])]), '', { ids: four.map(x => x.id) });
 });
 add('pokemon', 'pares', (ctx, s, r, P, L) => {
   const four = distinctBy(r.shuffle(ctx.pokemon), x => x.gen, 4); if (!four) return null;
-  return paresQ(r, 'Datos', 'Une cada Pokémon con la generación en la que debutó.', four.map(x => [x.name, `Generación ${x.gen}`]), '', { ids: four.map(x => x.id) });
+  return paresQ(r, 'Datos', 'Una cada Pokémon con la generación en la que debutó.', four.map(x => [x.name, `Generación ${x.gen}`]), '', { ids: four.map(x => x.id) });
 });
 add('pokemon', 'pares', (ctx, s, r, P, L) => {
   const four = distinctBy(r.shuffle(L.filter(x => x.from)), x => x.from, 4); if (!four) return null;
-  return paresQ(r, 'Evoluciones', 'Une cada Pokémon con el Pokémon del que evoluciona.', four.map(x => [x.name, ctx.byId.get(x.from).name]), '', { ids: four.map(x => x.id) });
+  return paresQ(r, 'Evoluciones', 'Una cada Pokémon con el Pokémon del que evoluciona.', four.map(x => [x.name, ctx.byId.get(x.from).name]), '', { ids: four.map(x => x.id) });
 });
 // --- Pokémon: marcar todas ---
 const pickMulti = (r, yes, no) => {
@@ -200,7 +200,7 @@ add('pokemon', 'escribir', (ctx, s, r, P, L) => {
   const key = [...p.types].sort().join('-');
   const valid = ctx.pokemon.filter(x => [...x.types].sort().join('-') === key);
   const show = valid.filter(x => P.includes(x)).concat(valid).slice(0, 6);
-  return escribirQ('Datos', `Escribe un Pokémon de tipo ${tok(p.types[0])} / ${tok(p.types[1])}.`, valid.map(x => String(x.id)), [...new Set(show.map(x => x.name))], 'pokemon', '', { ids: [p.id], types: p.types });
+  return escribirQ('Datos', `Escriba un Pokémon de tipo ${tok(p.types[0])} / ${tok(p.types[1])}.`, valid.map(x => String(x.id)), [...new Set(show.map(x => x.name))], 'pokemon', '', { ids: [p.id], types: p.types });
 });
 add('pokemon', 'escribir', (ctx, s, r, P, L) => {
   const p = r.pick(L.filter(x => ctx.evolvesTo.get(x.id)?.length)); if (!p) return null;
@@ -253,7 +253,7 @@ add('mecanicas', 'multi', (ctx, s, r, P, L) => {
 add('mecanicas', 'escribir', (ctx, s, r, P, L) => {
   const p = r.pick(L), yes = ctx.types.filter(t => typeMultiplier(ctx, t.id, p.types) > 1);
   if (!yes.length) return null;
-  return escribirQ('Tabla de tipos', `Escribe un tipo de ataque que sea súper eficaz contra ${p.name} (${typesTok(p.types)}).`, yes.map(t => String(t.id)), yes.map(t => t.name), 'tipos', '', { ids: [p.id], types: p.types });
+  return escribirQ('Tabla de tipos', `Escriba un tipo de ataque que sea súper eficaz contra ${p.name} (${typesTok(p.types)}).`, yes.map(t => String(t.id)), yes.map(t => t.name), 'tipos', '', { ids: [p.id], types: p.types });
 });
 
 // --- Juegos ---
@@ -296,15 +296,15 @@ add('juegos', 'vf', (ctx, s, r) => {
 add('juegos', 'orden', (ctx, s, r) => {
   const four = distinctBy(r.shuffle(games(ctx)), x => x.year, 4); if (!four) return null;
   four.sort((a, b) => a.year - b.year);
-  return ordenQ(r, 'Juegos', 'Ordena estos juegos del más antiguo al más nuevo.', four.map(g => ({ text: fullName(g), note: String(g.year) })));
+  return ordenQ(r, 'Juegos', 'Ordene estos juegos del más antiguo al más nuevo.', four.map(g => ({ text: fullName(g), note: String(g.year) })));
 }, 2);
 add('juegos', 'pares', (ctx, s, r) => {
   const four = distinctBy(r.shuffle(games(ctx)), x => x.region, 4); if (!four) return null;
-  return paresQ(r, 'Juegos', 'Une cada juego con su región.', four.map(g => [fullName(g), g.region]));
+  return paresQ(r, 'Juegos', 'Una cada juego con su región.', four.map(g => [fullName(g), g.region]));
 });
 add('juegos', 'pares', (ctx, s, r) => {
   const four = distinctBy(r.shuffle(games(ctx)), x => x.platform, 4); if (!four) return null;
-  return paresQ(r, 'Juegos', 'Une cada juego con su consola.', four.map(g => [fullName(g), g.platform]));
+  return paresQ(r, 'Juegos', 'Una cada juego con su consola.', four.map(g => [fullName(g), g.platform]));
 });
 add('juegos', 'multi', (ctx, s, r) => {
   const plat = r.pick(['Game Boy Advance', 'Nintendo DS', 'Nintendo 3DS', 'Nintendo Switch']);
@@ -346,12 +346,12 @@ add('regiones', 'vf', (ctx, s, r) => {
 });
 add('regiones', 'orden', (ctx, s, r) => {
   const four = r.shuffle(regs(ctx).filter(x => x.id !== 'hisui')).slice(0, 4).sort((a, b) => a.gen - b.gen);
-  return ordenQ(r, 'Regiones', 'Ordena estas regiones por la generación en que debutaron.', four.map(x => ({ text: x.name, note: `Gen ${x.gen}` })));
+  return ordenQ(r, 'Regiones', 'Ordene estas regiones por la generación en que debutaron.', four.map(x => ({ text: x.name, note: `Gen ${x.gen}` })));
 }, 2);
-add('regiones', 'pares', (ctx, s, r) => paresQ(r, 'Regiones', 'Une cada región con su profesor o profesora.', r.shuffle(regs(ctx)).slice(0, 4).map(x => [x.name, x.prof])), 2);
+add('regiones', 'pares', (ctx, s, r) => paresQ(r, 'Regiones', 'Una cada región con su profesor o profesora.', r.shuffle(regs(ctx)).slice(0, 4).map(x => [x.name, x.prof])), 2);
 add('regiones', 'pares', (ctx, s, r) => {
   const four = distinctBy(r.shuffle(regs(ctx)), x => x.insp, 4); if (!four) return null;
-  return paresQ(r, 'Regiones', 'Une cada región con el lugar real en que se inspira.', four.map(x => [x.name, x.insp]));
+  return paresQ(r, 'Regiones', 'Una cada región con el lugar real en que se inspira.', four.map(x => [x.name, x.insp]));
 }, 2);
 add('regiones', 'escribir', (ctx, s, r) => {
   const [g, key] = pickW(r, s, regs(ctx), 'ep');
@@ -400,14 +400,14 @@ add('personajes', 'orden', (ctx, s, r) => {
   const reg = r.pick(['hoenn', 'sinnoh', 'teselia', 'kalos', 'galar']);
   const four = r.shuffle(lids(ctx).filter(l => l.region === reg && l.order)).slice(0, 4).sort((a, b) => a.order - b.order);
   if (four.length < 4) return null;
-  return ordenQ(r, 'Líderes de gimnasio', `Ordena estos líderes de ${regName(ctx, reg)} en el orden en que te enfrentas a ellos.`, four.map(l => ({ text: l.name, note: `Gimnasio ${l.order}` })), reg === 'sinnoh' ? 'Orden de Diamante y Perla.' : '');
+  return ordenQ(r, 'Líderes de gimnasio', `Ordene estos líderes de ${regName(ctx, reg)} en el orden en que se enfrentan.`, four.map(l => ({ text: l.name, note: `Gimnasio ${l.order}` })), reg === 'sinnoh' ? 'Orden de Diamante y Perla.' : '');
 }, 2);
 add('personajes', 'pares', (ctx, s, r) => {
   const four = distinctBy(r.shuffle(lids(ctx)), x => x.type, 4); if (!four) return null;
-  return paresQ(r, 'Líderes de gimnasio', 'Une cada líder de gimnasio con su tipo.', four.map(l => [l.name, tn(ctx, l.type)]));
+  return paresQ(r, 'Líderes de gimnasio', 'Una cada líder de gimnasio con su tipo.', four.map(l => [l.name, tn(ctx, l.type)]));
 }, 2);
-add('personajes', 'pares', (ctx, s, r) => paresQ(r, 'Campeones', 'Une cada campeón o campeona con su región.', r.shuffle(regs(ctx).filter(x => x.champion)).slice(0, 4).map(x => [x.champion, x.name])));
-add('personajes', 'pares', (ctx, s, r) => paresQ(r, 'Villanos', 'Une cada jefe con su equipo.', r.shuffle(ctx.world.jefes).slice(0, 4).map(b => [b.name, b.team])));
+add('personajes', 'pares', (ctx, s, r) => paresQ(r, 'Campeones', 'Una cada campeón o campeona con su región.', r.shuffle(regs(ctx).filter(x => x.champion)).slice(0, 4).map(x => [x.champion, x.name])));
+add('personajes', 'pares', (ctx, s, r) => paresQ(r, 'Villanos', 'Una cada jefe con su equipo.', r.shuffle(ctx.world.jefes).slice(0, 4).map(b => [b.name, b.team])));
 add('personajes', 'multi', (ctx, s, r) => {
   const reg = r.pick(['kanto', 'johto', 'hoenn', 'sinnoh', 'teselia', 'kalos', 'galar', 'paldea']);
   const sets = pickMulti(r, lids(ctx).filter(l => l.region === reg), lids(ctx).filter(l => l.region !== reg)); if (!sets) return null;
@@ -467,7 +467,7 @@ add('pokemon', 'vf', (ctx, s, r, P, L) => {
 add('pokemon', 'escribir', (ctx, s, r) => {
   const ab = r.pick([...ctx.abHolders].filter(([, l]) => l.length >= 3 && l.length <= 40)); if (!ab) return null;
   const [aid, holders] = ab;
-  return escribirQ('Habilidades', `Escribe un Pokémon que pueda tener la habilidad ${abName(ctx, aid)}.`, holders.map(String), holders.map(id => ctx.byId.get(id).name), 'pokemon');
+  return escribirQ('Habilidades', `Escriba un Pokémon que pueda tener la habilidad ${abName(ctx, aid)}.`, holders.map(String), holders.map(id => ctx.byId.get(id).name), 'pokemon');
 });
 add('pokemon', 'multi', (ctx, s, r, P) => {
   const ab = r.pick([...ctx.abHolders].filter(([, l]) => l.filter(id => P.some(x => x.id === id)).length >= 3)); if (!ab) return null;
@@ -520,11 +520,11 @@ add('mecanicas', 'vf', (ctx, s, r) => {
 add('mecanicas', 'orden', (ctx, s, r) => {
   const four = distinctBy(r.shuffle(mvs(ctx).filter(m => m.power > 1)), m => m.power, 4); if (!four) return null;
   four.sort((a, b) => a.power - b.power);
-  return ordenQ(r, 'Movimientos', 'Ordena estos movimientos de menor a mayor potencia.', four.map(m => ({ text: m.name, note: String(m.power) })));
+  return ordenQ(r, 'Movimientos', 'Ordene estos movimientos de menor a mayor potencia.', four.map(m => ({ text: m.name, note: String(m.power) })));
 }, 2);
 add('mecanicas', 'pares', (ctx, s, r) => {
   const four = distinctBy(r.shuffle(mvs(ctx)), m => m.type, 4); if (!four) return null;
-  return paresQ(r, 'Movimientos', 'Une cada movimiento con su tipo.', four.map(m => [m.name, tn(ctx, m.type)]));
+  return paresQ(r, 'Movimientos', 'Una cada movimiento con su tipo.', four.map(m => [m.name, tn(ctx, m.type)]));
 }, 2);
 add('mecanicas', 'multi', (ctx, s, r) => {
   const t = r.pick(ctx.types).id;

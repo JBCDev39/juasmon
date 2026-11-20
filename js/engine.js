@@ -26,26 +26,32 @@ export const FORMATS = {
 };
 const FORMAT_WEIGHTS = { preguntas: 20, vf: 10, orden: 7, pares: 7, multi: 7, escribir: 6, bomba: 3, intruso: 7, estimacion: 5, masomenos: 10, idioma: 7, quien: 6, pokedex: 5, pokedle: 3 };
 // Rondas posibles en el modo "Por rondas".
-export const ROUND_MODES = ['masomenos', 'idioma', 'preguntas', 'quien', 'pokedex', 'intruso', 'estimacion', 'pokedle'];
+export const ROUND_MODES = ['preguntas', 'vf', 'masomenos', 'idioma', 'quien', 'pokedex', 'intruso', 'orden', 'pares', 'multi', 'escribir', 'estimacion', 'bomba', 'pokedle'];
 export { keyLabel } from './preguntas.js';
 
 export const MODES = {
+  preguntas: { name: 'Opción múltiple', blurb: 'Cuatro opciones y una sola correcta.' },
+  vf: { name: 'Verdadero o falso', blurb: '¿Es cierto o no? Rapidito.' },
   masomenos: { name: 'Más o Menos', blurb: '¿El segundo Pokémon tiene más o menos que el primero?' },
-  idioma: { name: 'Pokeidioma', blurb: 'Adivina el Pokémon por su nombre en japonés, alemán y francés.' },
-  preguntas: { name: 'Pokepreguntas', blurb: 'Preguntas de todo tipo: opción múltiple, verdadero o falso, ordenar, emparejar, escribir, el intruso y la bomba.' },
-  quien: { name: '¿Quién es?', blurb: 'Adivina el Pokémon con pistas: mientras menos necesites, más puntos.' },
-  pokedex: { name: 'Entrada de Pokédex', blurb: 'Adivina el Pokémon por su descripción oficial.' },
+  idioma: { name: 'Pokeidioma', blurb: 'Adivine el Pokémon por su nombre en japonés, alemán y francés.' },
+  quien: { name: '¿Quién es?', blurb: 'Adivine el Pokémon con pistas: mientras menos necesite, más puntos.' },
+  pokedex: { name: 'Entrada de Pokédex', blurb: 'Adivine el Pokémon por su descripción oficial.' },
   intruso: { name: 'El intruso', blurb: 'Tres tienen algo en común. ¿Cuál no pertenece?' },
+  orden: { name: 'Ordenar', blurb: 'Ponga las cosas en el orden correcto.' },
+  pares: { name: 'Emparejar', blurb: 'Una cada cosa con su pareja.' },
+  multi: { name: 'Marcar todas', blurb: 'Puede haber más de una correcta: márquelas todas.' },
+  escribir: { name: 'Escribir', blurb: 'Sin opciones: escriba la respuesta.' },
   estimacion: { name: 'Estimación', blurb: '¿Cuánto pesa? ¿Cuánto mide? Gana quien quede más cerca.' },
-  pokedle: { name: 'Pokédle', blurb: 'Adivina el Pokémon secreto con pistas de tipo, generación, altura y peso.' },
+  bomba: { name: 'La bomba', blurb: 'Diga todos los que pueda antes de que se despiche.' },
+  pokedle: { name: 'Pokédle', blurb: 'Adivine el Pokémon secreto con pistas de tipo, generación, altura y peso.' },
   mezcla: { name: 'Mezclada', blurb: 'Cada pregunta puede ser de cualquier formato.' },
 };
 
 // Formas de jugar. 'clasica' sirve para 1 a 4 jugadores; las otras dos son de un jugador.
 export const GAME_TYPES = {
-  clasica: { name: 'Clásica', blurb: 'Las rondas de siempre. Solo, intenta superar tu récord.' },
-  supervivencia: { name: 'Supervivencia', blurb: 'Tres vidas y preguntas mezcladas. ¿Hasta dónde llegas?' },
-  contrarreloj: { name: 'Contrarreloj', blurb: 'Contra el reloj: responde bien todas las que puedas.' },
+  clasica: { name: 'Clásica', blurb: 'Un número fijo de preguntas. Trate de superar su récord.' },
+  supervivencia: { name: 'Supervivencia', blurb: 'Tres vidas y preguntas mezcladas. ¿Hasta dónde llega?' },
+  contrarreloj: { name: 'Contrarreloj', blurb: 'Contra el reloj: responda bien todas las que pueda.' },
   rosco: { name: 'Juasrosco', blurb: 'Una pista por cada letra del abecedario.' },
 };
 
@@ -256,7 +262,7 @@ export const roundList = state => isMixed(state) ? ['mezcla'] : state.config.rou
 function nextQuestion(state, ctx) {
   const r = rng(state.rng);
   const mode = roundList(state)[state.ri];
-  const fmt = mode === 'mezcla' ? pickFormat(state, r) : mode === 'preguntas' ? null : mode;
+  const fmt = mode === 'mezcla' ? pickFormat(state, r) : mode;
   let q = { ...makeQuestion(ctx, state, r, fmt), mode };
   const cur = currentPlayer(state), n = state.players.length;
   if (q.kind === 'bomba') q = { ...q, bomb: { start: cur, turn: cur, given: [], counts: state.players.map(() => 0), last: null, seq: 0 } };
@@ -339,7 +345,13 @@ function settle(state, res, extraLog = []) {
   bestStreaks[p] = Math.max(bestStreaks[p], streaks[p]);
   return {
     ...state, phase: 'reveal', result: { ...res, correct, partial, streak: streaks[p] }, scores, lives, streak, streaks, bestStreaks, bestStreak: Math.max(state.bestStreak, streak),
-    log: state.log.concat({ round: state.ri, player: p, mode: state.q.mode, kind: state.q.kind, correct, points: res.points }, extraLog),
+    log: state.log.concat({
+      round: state.ri, player: p, mode: state.q.mode, kind: state.q.kind, correct, points: res.points,
+      // Datos para las medallas.
+      typo: !!res.typo, id: state.q.ids?.[0] ?? null, hints: state.hints,
+      tries: res.pd?.tries ?? null, n: state.q.kind === 'bomba' ? (state.q.bomb?.counts?.[p] ?? 0) : null,
+      near: res.err != null && (state.q.rel ? res.err <= 0.02 : res.err === 0),
+    }, extraLog),
   };
 }
 
@@ -523,6 +535,7 @@ function roscoAction(state, action, ctx) {
     const i = clone.pos[p], entry = R.boards[p][i];
     if (action.type === 'ROSCO_ANSWER') {
       const how = roscoMatch(entry, action.value), ok = !!how;
+      if (how === 'typo') { clone.typos = (R.typos || R.errors.map(() => 0)).slice(); clone.typos[p]++; }
       clone.status[p][i] = ok ? 'ok' : 'bad';
       if (!ok) clone.errors[p]++;
       clone.last = { player: p, idx: i, ok, typo: how === 'typo', answer: entry.answer, given: String(action.value).slice(0, 40) };

@@ -16,17 +16,27 @@ const DARK_INK = new Set([1, 3, 5, 6, 7, 9, 12, 13, 15]);
 const PCOLORS = ['var(--red)', 'var(--blue)', '#c98a00', '#8a4fd8'];
 const SHORT = { masomenos: 'Más o Menos', idioma: 'Idioma', preguntas: 'Preguntas', quien: '¿Quién es?', pokedex: 'Pokédex', intruso: 'Intruso', estimacion: 'Estimación', pokedle: 'Pokédle', mezcla: 'Partida' };
 const SCORING = {
-  masomenos: '1 punto por acierto.', idioma: '3 puntos sin pistas, 2 con una pista, 1 con dos.', preguntas: '1 punto por acierto; medio punto si casi.',
-  quien: '3 puntos con una pista, 2 con dos, 1 con más.', pokedex: '1 punto por acierto.', intruso: '1 punto por acierto.',
-  estimacion: 'En multijugador, el punto es para quien quede más cerca.', pokedle: 'En multijugador, el punto es para quien lo adivine primero.',
+  preguntas: '1 punto por acierto.', vf: '1 punto por acierto.', masomenos: '1 punto por acierto.',
+  idioma: '3 puntos sin pistas, 2 con una pista, 1 con dos.', quien: '3 puntos con una pista, 2 con dos, 1 con más.',
+  pokedex: '1 punto por acierto.', intruso: '1 punto por acierto.',
+  orden: '1 punto si todo está en orden; medio punto si casi.', pares: '1 punto si todas las parejas están bien; medio si la mitad.',
+  multi: '1 punto si marca todas bien; medio punto si casi.', escribir: '1 punto por acierto. Se perdona un error de tipeo.',
+  estimacion: 'Un punto si queda cerca, medio si queda más o menos. En duelo, el punto es para el más cercano.',
+  bomba: 'Cada 3 respuestas valen 1 punto (máximo 3).', pokedle: 'Adivínelo en pocos intentos para ganar el punto.',
   mezcla: 'Cada pregunta vale 1 punto (medio si casi). Pokeidioma y ¿Quién es? valen hasta 3.',
 };
+// Frases ticas para el final de las partidas.
+const WIN_LINES = ['¡A cachete!', '¡Pura vida!', '¡Mae, qué nivel!', '¡Es muy eficaz!', '¡Golpe crítico!', '¡Jovensaso total!'];
+const LOSE_LINES = ['¡Por mamón!', '¡Sobón!', '¡Por mamapichas!', '¡Qué sal, mae!', 'Diay, mae… ¿qué pasó?', '¡Qué torta!', '¡Lo bailaron!', '¡Qué despiche!', 'Pobre carajillo…', '¡Se debilitó!', '¡Vuelva a Pueblo Paleta!', 'Hasta un Magikarp sabía esa.', 'Usó Salpicadura… no pasó nada.', 'Ni con una Hiperpoción se salva.'];
+const TIE_LINE = 'Diay, empate. ¿Otra?';
+// Siempre la misma frase para la misma partida (no cambia al volver a dibujar la pantalla).
+const lineFor = (list, seed, k = 0) => list[((seed >>> 0) + k * 7) % list.length];
 // Rangos según la experiencia acumulada (puntos ganados en todas las partidas).
 const RANKS = [[0, 'Novato'], [25, 'Entrenador'], [75, 'Líder de gimnasio'], [175, 'Campeón'], [350, 'Jovensaso']];
 const rankOf = xp => { let r = RANKS[0]; for (const x of RANKS) if (xp >= x[0]) r = x; const i = RANKS.indexOf(r); return { name: r[1], next: RANKS[i + 1] || null, i }; };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
-const APP_VERSION = 8;
+const APP_VERSION = 9;
 const FLAG_REASONS = ['La respuesta está mal', 'La pregunta no tiene sentido o es confusa', 'Un nombre o dato está mal escrito', 'Es demasiado fácil o difícil', 'Otro'];
 const FLAG_SVG = '<svg class="flagico" viewBox="0 0 10 12" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="0" width="1" height="12" fill="currentColor"/><rect x="2" y="1" width="6" height="1" fill="var(--red)"/><rect x="2" y="2" width="7" height="3" fill="var(--red)"/><rect x="2" y="5" width="5" height="1" fill="var(--red)"/></svg>';
 const store = {
@@ -73,17 +83,76 @@ const Sound = {
 };
 
 // ---------- dibujos pixelados ----------
-// Medallas: diseños pixelados propios.
-const MEDALS = [
-  { id: 'primera', name: 'Medalla Inicio', how: 'Termina tu primera partida.', color: '#c98a00', pix: ['....##....', '...####...', '..######..', '.########.', '##########', '##########', '.########.', '..######..', '...####...', '....##....'] },
-  { id: 'racha10', name: 'Medalla Racha', how: '10 aciertos seguidos en una partida.', color: '#e3350d', pix: ['....#.....', '...##.....', '..###.....', '.#######..', '..#######.', '.....###..', '.....##...', '.....#....', '..........', '..........'] },
-  { id: 'veloz', name: 'Medalla Rayo', how: '15 puntos o más en Contrarreloj.', color: '#f7d02c', pix: ['.....###..', '....###...', '...###....', '..#######.', '.....###..', '....###...', '...###....', '..##......', '.#........', '..........'] },
-  { id: 'superviviente', name: 'Medalla Corazón', how: '20 puntos o más en Supervivencia.', color: '#d7263d', pix: ['..........', '.##...##..', '####.####.', '#########.', '#########.', '.#######..', '..#####...', '...###....', '....#.....', '..........'] },
-  { id: 'rosco20', name: 'Medalla Rosco', how: '20 letras o más en un Juasrosco.', color: '#e8722a', pix: ['...####...', '..#....#..', '.#......#.', '#........#', '#........#', '#........#', '#........#', '.#......#.', '..#....#..', '...####...'] },
-  { id: 'retos5', name: 'Medalla Constancia', how: 'Completa 5 retos del día.', color: '#2f6fdb', pix: ['.########.', '.#......#.', '.########.', '.#.#.#.#..', '.########.', '.#.#.#.#..', '.########.', '.#.#.#.#..', '.########.', '..........'] },
-  { id: 'perfecto', name: 'Medalla Perfecta', how: '10 de 10 en un reto del día.', color: '#2e9e4f', pix: ['....#.....', '....#.....', '...###....', '#########.', '.#######..', '..#####...', '.###.###..', '.##...##..', '.#.....#..', '..........'] },
-  { id: 'jovensaso', name: 'Medalla Jovensaso', how: 'Llega al rango Jovensaso.', color: '#8a4fd8', pix: ['#..#..#..#', '##.##.##.#', '##########', '##########', '#.######.#', '.########.', '.########.', '..........', '..........', '..........'] },
+// Medallas: diseños pixelados propios. Las de tres niveles van en bronce, plata y oro.
+const TIER = [['bronce', '#b0703a'], ['plata', '#8e9aa3'], ['oro', '#d4a300']];
+const MEDAL_GLYPH = {
+  inicio: ['....##....', '...####...', '..######..', '.########.', '##########', '##########', '.########.', '..######..', '...####...', '....##....'],
+  racha: ['....#.....', '...##.....', '..###.....', '.#######..', '..#######.', '.....###..', '.....##...', '.....#....', '..........', '..........'],
+  rayo: ['.....###..', '....###...', '...###....', '..#######.', '.....###..', '....###...', '...###....', '..##......', '.#........', '..........'],
+  corazon: ['..........', '.##...##..', '####.####.', '#########.', '#########.', '.#######..', '..#####...', '...###....', '....#.....', '..........'],
+  rosco: ['...####...', '..#....#..', '.#......#.', '#........#', '#........#', '#........#', '#........#', '.#......#.', '..#....#..', '...####...'],
+  constancia: ['.########.', '.#......#.', '.########.', '.#.#.#.#..', '.########.', '.#.#.#.#..', '.########.', '.#.#.#.#..', '.########.', '..........'],
+  perfecta: ['....#.....', '....#.....', '...###....', '#########.', '.#######..', '..#####...', '.###.###..', '.##...##..', '.#.....#..', '..........'],
+  corona: ['#..#..#..#', '##.##.##.#', '##########', '##########', '#.######.#', '.########.', '.########.', '..........', '..........', '..........'],
+  libro: ['..........', '.###..###.', '#...##...#', '#.#.##.#.#', '#...##...#', '#.#.##.#.#', '#...##...#', '#.#.##.#.#', '.###..###.', '..........'],
+  llama: ['....#.....', '....##....', '...###....', '...####.#.', '..######..', '.#######..', '.###.####.', '.##...###.', '..##..##..', '...####...'],
+  trofeo: ['##########', '#.######.#', '#.######.#', '.#.####.#.', '...####...', '....##....', '....##....', '...####...', '..######..', '..........'],
+  sol: ['....##....', '.#......#.', '...####...', '..######..', '#.######.#', '#.######.#', '..######..', '...####...', '.#......#.', '....##....'],
+  chile: ['.......#..', '......#...', '.....###..', '....####..', '...####...', '..####....', '.####.....', '.###......', '##........', '#.........'],
+  lluvia: ['...###....', '..#####...', '.#######..', '##########', '##########', '.########.', '..........', '.#..#..#..', '#..#..#...', '..........'],
+  juas: ['##########', '#........#', '#.###.#..#', '#...#.#..#', '#...#.#..#', '#.#.#....#', '#..##.#..#', '#........#', '###.######', '..##......'],
+  diana: ['..######..', '.#......#.', '#..####..#', '#.#....#.#', '#.#.##.#.#', '#.#.##.#.#', '#.#....#.#', '#..####..#', '.#......#.', '..######..'],
+  bomba: ['.......#.#', '......#.#.', '.....#....', '...####...', '..######..', '.##.#####.', '.#.######.', '.########.', '..######..', '...####...'],
+  ojo: ['..........', '...####...', '.##....##.', '#...##...#', '#..####..#', '#..####..#', '#...##...#', '.##....##.', '...####...', '..........'],
+  mundo: ['...####...', '..#.##.#..', '.#..##..#.', '##########', '#...##...#', '#...##...#', '##########', '.#..##..#.', '..#.##.#..', '...####...'],
+  cuadros: ['####..####', '####..####', '####..####', '####..####', '..........', '..........', '####..####', '####..####', '####..####', '####..####'],
+  letra: ['....##....', '...####...', '..##..##..', '.##....##.', '.##....##.', '.########.', '.##....##.', '.##....##.', '.##....##.', '..........'],
+  pluma: ['........##', '.......###', '......####', '.....####.', '....####..', '...####...', '..###.#...', '..##.#....', '.#.##.....', '#.........'],
+  lupa: ['..####....', '.#....#...', '#......#..', '#......#..', '#......#..', '.#....#...', '..#####...', '......##..', '.......##.', '........##'],
+  espadas: ['#........#', '.#......#.', '..#....#..', '...#..#...', '....##....', '....##....', '...#..#...', '.##....##.', '.#......#.', '#........#'],
+  estallido: ['....##....', '.#..##..#.', '..#.##.#..', '....##....', '##..##..##', '....##....', '..#....#..', '.#..##..#.', '....##....', '..........'],
+  flecha: ['....##....', '...####...', '..######..', '.########.', '####..####', '....##....', '....##....', '....##....', '....##....', '....##....'],
+  rival: ['.##....##.', '####..####', '####..####', '.##....##.', '..........', '####..####', '####..####', '####..####', '####..####', '..........'],
+};
+const MEDAL_DEFS = [
+  // [id, nombre, cómo se gana, categoría, dibujo, color, nivel]
+  ['primera', 'Inicio', 'Termine su primera partida.', 'Progreso', 'inicio', '#c98a00'],
+  ...[[10, 'fiebre1'], [50, 'fiebre2'], [150, 'fiebre3']].map(([n, id], t) => [id, 'Fiebre Pokémon', `Juegue ${n} partidas.`, 'Progreso', 'llama', null, t]),
+  ...[[100, 'sabio1'], [500, 'sabio2'], [2000, 'sabio3']].map(([n, id], t) => [id, 'Sabelotodo', `${n} respuestas correctas en total.`, 'Progreso', 'libro', null, t]),
+  ['campeon', 'Campeón', 'Llegue al rango Campeón.', 'Progreso', 'trofeo', '#2f6fdb'],
+  ['jovensaso', 'Jovensaso', 'Llegue al rango Jovensaso.', 'Progreso', 'corona', '#8a4fd8'],
+  ...[[10, 'racha10'], [20, 'racha20'], [30, 'racha30']].map(([n, id], t) => [id, 'Racha', `${n} aciertos seguidos en una partida.`, 'Modos', 'racha', null, t]),
+  ...[[20, 'superviviente'], [35, 'superviviente35'], [50, 'superviviente50']].map(([n, id], t) => [id, 'Corazón', `${n} puntos o más en Supervivencia.`, 'Modos', 'corazon', null, t]),
+  ...[[15, 'veloz'], [22, 'veloz22'], [30, 'veloz30']].map(([n, id], t) => [id, 'Rayo', `${n} puntos o más en Contrarreloj.`, 'Modos', 'rayo', null, t]),
+  ...[[20, 'rosco20'], [24, 'rosco24'], [27, 'rosco27']].map(([n, id], t) => [id, 'Rosco', n === 27 ? 'Las 27 letras en un Juasrosco.' : `${n} letras o más en un Juasrosco.`, 'Modos', 'rosco', null, t]),
+  ['bombero', 'Antibombas', '12 respuestas o más en una bomba.', 'Modos', 'bomba', '#e3350d'],
+  ['pokedle1', 'Tiro al blanco', 'Adivine un Pokédle al primer intento.', 'Modos', 'diana', '#e8722a'],
+  ...[[5, 'retos5'], [30, 'retos30'], [100, 'retos100']].map(([n, id], t) => [id, 'Constancia', `Complete ${n} retos del día.`, 'Reto del día', 'constancia', null, t]),
+  ['perfecto', 'Perfecta', '10 de 10 en un reto del día.', 'Reto del día', 'perfecta', '#2e9e4f'],
+  ['semana', 'Semana completa', 'Juegue el reto del día 7 días seguidos.', 'Reto del día', 'constancia', '#2f6fdb'],
+  ['puravida', 'Pura vida', 'Juegue el reto del día 30 días seguidos.', 'Reto del día', 'sol', '#e8a500'],
+  ['poliglota', 'Políglota', '25 aciertos en Pokeidioma.', 'Conocimiento', 'letra', '#2bb5b8'],
+  ['halcon', 'Ojo de halcón', 'Quede a menos de 2 % en una estimación.', 'Conocimiento', 'ojo', '#2e9e4f'],
+  ['todoterreno', 'Todoterreno', 'Acierte al menos una pregunta de cada formato.', 'Conocimiento', 'cuadros', '#8a4fd8'],
+  ['trotamundos', 'Trotamundos', 'Acierte preguntas de Pokémon de las 9 generaciones.', 'Conocimiento', 'mundo', '#2f6fdb'],
+  ['alchile', 'Al chile', 'Acierte un ¿Quién es? con una sola pista.', 'Chistosas', 'chile', '#d7263d'],
+  ['salado', 'Salado', 'Falle 5 seguidas en una partida.', 'Chistosas', 'lluvia', '#56615b'],
+  ['juas', '¡JUAS!', 'Acierte 10 veces con un error de tipeo.', 'Chistosas', 'juas', '#e3350d'],
+  ['autor', 'Autor', 'Cree 10 preguntas propias.', 'Chistosas', 'pluma', '#c98a00'],
+  ['reportero', 'Ojo crítico', 'Reporte una pregunta que esté mala.', 'Chistosas', 'lupa', '#56615b'],
+  ['mejenga1', 'Primera mejenga', 'Gane su primer duelo en línea.', 'En línea', 'espadas', '#2f6fdb', null, true],
+  ['paliza', 'Paliza', 'Gane un duelo en línea por 5 puntos o más.', 'En línea', 'estallido', '#e3350d', null, true],
+  ['remontada', 'Remontada', 'Gane un duelo en línea después de ir perdiendo por 3.', 'En línea', 'flecha', '#2e9e4f', null, true],
+  ['rival10', 'Rival eterno', 'Gánele 10 duelos en línea al mismo rival.', 'En línea', 'rival', '#8a4fd8', null, true],
 ];
+const MEDALS = MEDAL_DEFS.map(([id, name, how, cat, g, color, tier = null, soon = false]) => ({
+  id, how, cat, soon, pix: MEDAL_GLYPH[g],
+  name: tier === null ? name : `${name} (${TIER[tier][0]})`,
+  color: tier === null ? color : TIER[tier][1],
+}));
+const MEDAL_CATS = ['Progreso', 'Modos', 'Reto del día', 'Conocimiento', 'Chistosas', 'En línea'];
+const medalById = id => MEDALS.find(m => m.id === id);
+
 const crDate = (d = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Costa_Rica', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 let daily = store.load('pt-daily', {});
 let dailyBoard = null, userId = null;
@@ -99,7 +168,27 @@ const AV_ICONS = {
   luna: ['....####....', '..#####.....', '.#####......', '.####.......', '####........', '####........', '####........', '####........', '.####.......', '.######...#.', '..########..', '....####....'],
   corona: ['............', '#....##....#', '##..####..##', '###.####.###', '############', '############', '############', '.##########.', '.##########.', '............', '.##########.', '............'],
   corazon: ['............', '.###....###.', '#####..#####', '############', '############', '############', '.##########.', '..########..', '...######...', '....####....', '.....##.....', '............'],
+  fantasma: ['....####....', '..########..', '.##########.', '.##..##..##.', '.##..##..##.', '.##########.', '############', '############', '############', '############', '###..###..##', '##....##...#'],
+  copo: ['.....##.....', '..#..##..#..', '...#.##.#...', '....####....', '.#..####..#.', '############', '############', '.#..####..#.', '....####....', '...#.##.#...', '..#..##..#..', '.....##.....'],
+  flor: ['....###.....', '...#####....', '.##.###.##..', '####...####.', '####...####.', '.##.###.##..', '...#####....', '....###.....', '.....#......', '..#..#......', '...###......', '.....#......'],
+  montana: ['............', '.....#......', '....###.....', '...#####....', '...#####..#.', '..#######.##', '..##########', '.###########', '.###########', '############', '############', '............'],
+  ojo: ['............', '............', '...######...', '.##......##.', '#...####...#', '#..##..##..#', '#..##..##..#', '#...####...#', '.##......##.', '...######...', '............', '............'],
+  espada: ['..........##', '.........###', '........###.', '.......###..', '......###...', '.....###....', '.#..###.....', '..####......', '...##.......', '..####......', '.##..#......', '##..........'],
+  escudo: ['############', '############', '##........##', '##.######.##', '##.######.##', '##.######.##', '.#.######.#.', '.##.####.##.', '..##.##.##..', '...##..##...', '....####....', '.....##.....'],
+  gema: ['............', '...######...', '..#.#..#.#..', '.##########.', '############', '.##########.', '..########..', '...######...', '....####....', '.....##.....', '............', '............'],
+  huevo: ['.....##.....', '....####....', '...######...', '..########..', '..#.####.#..', '.###.##.###.', '.##########.', '.###.##.###.', '.##########.', '..########..', '...######...', '............'],
+  pluma: ['.........###', '........####', '.......####.', '......#####.', '.....####.#.', '....####.#..', '...####.#...', '...###.#....', '..##..#.....', '..#.##......', '.#..........', '#...........'],
+  nota: ['.....######.', '.....######.', '.....#....#.', '.....#....#.', '.....#....#.', '.....#....#.', '.....#....#.', '..###...###.', '.####..####.', '.####..####.', '..##....##..', '............'],
+  sol: ['.....##.....', '.#...##...#.', '..#......#..', '....####....', '...######...', '##.######.##', '##.######.##', '...######...', '....####....', '..#......#..', '.#...##...#.', '.....##.....'],
+  nube: ['............', '............', '.....###....', '....#####...', '..#########.', '.###########', '############', '############', '.##########.', '............', '............', '............'],
+  cohete: ['.....##.....', '....####....', '....####....', '...######...', '...##..##...', '...##..##...', '...######...', '...######...', '..########..', '.###.##.###.', '.##..##..##.', '.....##.....'],
+  ancla: ['.....##.....', '....#..#....', '....#..#....', '.....##.....', '..########..', '.....##.....', '.....##.....', '#....##....#', '##...##...##', '.##..##..##.', '..########..', '....####....'],
+  hongo: ['....####....', '..########..', '.###.##.###.', '##.######.##', '############', '.##########.', '....#..#....', '....#..#....', '...######...', '...######...', '....####....', '............'],
 };
+// Íconos que se ganan con medallas.
+const AV_LOCK = { huevo: 'fiebre1', gema: 'sabio2', espada: 'racha20', escudo: 'superviviente35', cohete: 'veloz22', ojo: 'halcon', fantasma: 'salado', sol: 'puravida' };
+const myMedals = () => new Set(records.medals?.[myName()] || []);
+const iconLocked = k => AV_LOCK[k] && !myMedals().has(AV_LOCK[k]);
 let profile = store.load('pt-profile', null);
 let profDraft = null;
 const myName = () => profile?.name || cfg.solo.name.trim() || 'Rojo';
@@ -122,7 +211,7 @@ function openProfile(first) {
 }
 function saveProfile() {
   const name = profDraft.name.trim().replace(/\s+/g, ' ').slice(0, 16);
-  if (!name) { profDraft.warn = 'Escribe un nombre para continuar.'; render(); document.getElementById('prof-name')?.focus(); return; }
+  if (!name) { profDraft.warn = 'Escriba un nombre para continuar.'; render(); document.getElementById('prof-name')?.focus(); return; }
   const taken = (dailyBoard || []).some(r => E.normalize(r.name) === E.normalize(name) && r.id && r.id !== userId);
   if (taken && profDraft.warn !== 'taken:' + name) { profDraft.warn = 'taken:' + name; render(); return; }
   const old = profile?.name || cfg.solo.name.trim();
@@ -138,16 +227,20 @@ function saveProfile() {
 }
 function profileView() {
   const d = profDraft, first = d.first;
-  const warn = d.warn.startsWith('taken:') ? `Ese nombre ya lo usa otro entrenador en la tabla de hoy. Toca «${first ? '¡Listo!' : 'Guardar'}» otra vez si igual lo quieres.` : d.warn;
+  const warn = d.warn.startsWith('taken:') ? `Ese nombre ya lo usa otro entrenador en la tabla de hoy. Toque «${first ? '¡Listo!' : 'Guardar'}» otra vez si igual lo quiere.` : d.warn;
   const head = first ? `<div class="welcome-head"><span class="wm2 px"><b>JUAS</b><i>mon</i></span></div>` : screenHead('Mi perfil');
   return `${head}<main class="${F.newScreen ? 'enter' : ''} profile">
-    <div class="box"><p class="q" ${first ? `data-tw="${esc('¿Cómo te llamas, entrenador?')}"` : ''}>${first ? '¿Cómo te llamas, entrenador?' : 'Tu nombre en este teléfono'}</p>
-      <p class="hint">${first ? 'Este teléfono te recordará. Lo puedes cambiar cuando quieras tocando tu nombre en el menú.' : 'Si lo cambias, tu XP, tus duelos y tus medallas se pasan al nombre nuevo.'}</p>
-      <div class="row" style="margin-top:10px">${avatar(d, 'big')}<input class="input" id="prof-name" data-prof-name="1" value="${esc(d.name)}" maxlength="16" autocomplete="off" placeholder="Tu nombre" style="flex:1"></div>
+    <div class="box"><p class="q" ${first ? `data-tw="${esc('¿Cómo se llama, entrenador?')}"` : ''}>${first ? '¿Cómo se llama, entrenador?' : 'Su nombre en este celular'}</p>
+      <p class="hint">${first ? 'Este celular lo va a recordar. Lo puede cambiar cuando quiera tocando su nombre en el menú.' : 'Si lo cambia, su XP, sus duelos y sus medallas se pasan al nombre nuevo.'}</p>
+      <div class="row" style="margin-top:10px">${avatar(d, 'big')}<input class="input" id="prof-name" data-prof-name="1" value="${esc(d.name)}" maxlength="16" autocomplete="off" placeholder="Su nombre" style="flex:1"></div>
       ${warn ? `<p class="flash bad keep">${esc(warn)}</p>` : ''}</div>
     <div class="setup">
       <div class="box field"><span class="l px">Color</span><div class="swatches">${AV_COLORS.map(c => `<button class="swatch" data-act="prof-color" data-val="${c}" style="--av:${c}" aria-pressed="${d.color === c}" aria-label="Color ${c}"></button>`).join('')}</div></div>
-      <div class="box field"><span class="l px">Ícono</span><div class="swatches">${Object.keys(AV_ICONS).map(k => `<button class="iconpick" data-act="prof-icon" data-val="${k}" aria-pressed="${d.icon === k}" aria-label="${k}">${avatar({ ...d, icon: k })}</button>`).join('')}</div></div>
+      <div class="box field"><span class="l px">Ícono</span><div class="swatches">${Object.keys(AV_ICONS).map(k => {
+        const lock = iconLocked(k), m = lock ? medalById(AV_LOCK[k]) : null;
+        return `<button class="iconpick ${lock ? 'locked' : ''}" data-act="prof-icon" data-val="${k}" aria-pressed="${d.icon === k}" ${lock ? `disabled title="Se gana con la medalla ${esc(m.name)}" aria-label="${k}: bloqueado, se gana con la medalla ${esc(m.name)}"` : `aria-label="${k}"`}>${avatar({ ...d, icon: k })}${lock ? '<span class="lock" aria-hidden="true">🔒</span>' : ''}</button>`;
+      }).join('')}</div>
+      <p class="hint">Los íconos con candado se desbloquean ganando medallas.</p></div>
     </div>
     <div class="row end"><button class="btn" data-act="prof-save">${first ? '¡Listo!' : 'Guardar'}</button></div>
   </main>`;
@@ -161,6 +254,8 @@ const PIX = {
   two: ['............', '..##....##..', '.####..####.', '.####..####.', '..##....##..', '............', '.####..####.', '#####..#####', '#####..#####', '#####..#####', '#####..#####', '............'],
   pencil: ['.........##.', '........####', '.......####.', '......####..', '.....####...', '....####....', '...####.....', '..####......', '.####.......', '.##.........', '#...........', '............'],
   trophy: ['############', '#.########.#', '#.########.#', '.#.######.#.', '...######...', '....####....', '.....##.....', '.....##.....', '....####....', '...######...', '...######...', '............'],
+  flag: ['##..........', '#######.....', '#########...', '#########...', '#######.....', '##..........', '##..........', '##..........', '##..........', '##..........', '##..........', '##..........'],
+  globe: ['....####....', '..##.##.##..', '.#..#..#..#.', '#...#..#...#', '############', '#...#..#...#', '#...#..#...#', '############', '#...#..#...#', '.#..#..#..#.', '..##.##.##..', '....####....'],
   heart: ['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...'],
 };
 function pixSvg(rows, color = '#1d2321', cls = '') {
@@ -410,28 +505,65 @@ function recordEnd() {
     records.games = (records.games || 0) + 1;
   }
   if (c.daily) recordDaily(state);
-  // Medallas
+  // Medallas y estadísticas de cada entrenador
   records.medals ||= {};
+  records.stats ||= {};
   endInfo.medals = [];
-  const doneDaily = Object.keys(daily).length;
+  const doneDaily = Object.keys(daily).length, dstreak = dailyStreak();
   state.players.forEach((p, i) => {
     const k = p.name.trim(); if (!k) return;
     const have = new Set(records.medals[k] || []), sc = state.scores[i];
-    const earn = id => { if (!have.has(id)) { have.add(id); endInfo.medals.push({ name: k, medal: MEDALS.find(m => m.id === id) }); } };
+    const st = records.stats[k] ||= { games: 0, correct: 0, typos: 0, idioma: 0, fmts: [], gens: [] };
+    const logs = state.log.filter(l => l.player === i);
+    st.games++;
+    st.correct += c.type === 'rosco' ? sc : logs.filter(l => l.correct).length;
+    st.typos += logs.filter(l => l.typo).length + (c.type === 'rosco' ? (state.rosco?.typos?.[i] || 0) : 0);
+    st.idioma += logs.filter(l => l.kind === 'idioma' && l.correct).length;
+    st.fmts = [...new Set([...st.fmts, ...logs.filter(l => l.correct).map(l => l.kind)])];
+    st.gens = [...new Set([...st.gens, ...logs.filter(l => l.correct && l.id).map(l => ctx.byId.get(+l.id)?.gen).filter(Boolean)])];
+    let run = 0, worst = 0;
+    for (const l of logs) { run = l.points === 0 ? run + 1 : 0; worst = Math.max(worst, run); }
+    const earn = id => { const m = medalById(id); if (m && !have.has(id)) { have.add(id); endInfo.medals.push({ name: k, medal: m }); } };
+    const tiers = (val, list) => list.forEach(([n, id]) => { if (val >= n) earn(id); });
     earn('primera');
-    if ((state.bestStreaks?.[i] || 0) >= 10) earn('racha10');
-    if (c.type === 'contrarreloj' && sc >= 15) earn('veloz');
-    if (c.type === 'supervivencia' && sc >= 20) earn('superviviente');
-    if (c.type === 'rosco' && sc >= 20) earn('rosco20');
-    if (c.daily && doneDaily >= 5) earn('retos5');
-    if (c.daily && state.log.filter(l => l.correct).length === 10) earn('perfecto');
-    if (rankOf(records.xp[k] || 0).name === 'Jovensaso') earn('jovensaso');
+    tiers(st.games, [[10, 'fiebre1'], [50, 'fiebre2'], [150, 'fiebre3']]);
+    tiers(st.correct, [[100, 'sabio1'], [500, 'sabio2'], [2000, 'sabio3']]);
+    tiers(state.bestStreaks?.[i] || 0, [[10, 'racha10'], [20, 'racha20'], [30, 'racha30']]);
+    if (c.type === 'contrarreloj') tiers(sc, [[15, 'veloz'], [22, 'veloz22'], [30, 'veloz30']]);
+    if (c.type === 'supervivencia') tiers(sc, [[20, 'superviviente'], [35, 'superviviente35'], [50, 'superviviente50']]);
+    if (c.type === 'rosco') tiers(sc, [[20, 'rosco20'], [24, 'rosco24'], [27, 'rosco27']]);
+    if (c.daily) {
+      tiers(doneDaily, [[5, 'retos5'], [30, 'retos30'], [100, 'retos100']]);
+      tiers(dstreak, [[7, 'semana'], [30, 'puravida']]);
+      if (logs.filter(l => l.correct).length === 10) earn('perfecto');
+    }
+    if (logs.some(l => l.kind === 'bomba' && l.n >= 12)) earn('bombero');
+    if (logs.some(l => l.kind === 'pokedle' && l.correct && l.tries === 1)) earn('pokedle1');
+    if (logs.some(l => l.kind === 'quien' && l.correct && l.hints === 0)) earn('alchile');
+    if (logs.some(l => l.kind === 'estimacion' && l.near)) earn('halcon');
+    if (worst >= 5) earn('salado');
+    if (st.typos >= 10) earn('juas');
+    if (st.idioma >= 25) earn('poliglota');
+    if (Object.keys(E.FORMATS).every(f => st.fmts.includes(f))) earn('todoterreno');
+    if (st.gens.length >= 9) earn('trotamundos');
+    const rk = rankOf(records.xp[k] || 0).i;
+    if (rk >= RANKS.findIndex(r => r[1] === 'Campeón')) earn('campeon');
+    if (rk >= RANKS.length - 1) earn('jovensaso');
     records.medals[k] = [...have];
   });
   store.save('pt-records', records);
 }
 
 // Reto del día: se guarda una sola vez por fecha (y en la tabla compartida, si se puede).
+// Medalla ganada fuera de una partida (preguntas propias, reportes).
+function grantMedal(id) {
+  const k = myName(), m = medalById(id);
+  records.medals ||= {};
+  const have = new Set(records.medals[k] || []);
+  if (!m || have.has(id)) return;
+  have.add(id); records.medals[k] = [...have]; store.save('pt-records', records);
+  Sound.play('rankup'); setTimeout(() => toast(`¡Nueva medalla: ${m.name}!`), 2700);
+}
 function recordDaily(s) {
   const date = s.config.daily;
   if (daily[date]) return;
@@ -469,7 +601,7 @@ function startDaily() {
   goto('game');
 }
 function boardHtml() {
-  if (!dbRef) return '<p class="hint">La tabla compartida no está disponible ahora. Tu resultado se guardó en este dispositivo.</p>';
+  if (!dbRef) return '<p class="hint">La tabla compartida no está disponible ahora. Su resultado se guardó en este celular.</p>';
   if (!dailyBoard) return '<p class="hint">Cargando la tabla del día…</p>';
   if (!dailyBoard.length) return '<p class="hint">Nadie ha terminado el reto de hoy todavía.</p>';
   return `<ol class="olist plain board">${dailyBoard.map((r, i) => `<li class="ok"><span class="num px">${i + 1}</span><span class="tx">${avatar(r, 'sm')} ${esc(r.name)}${r.id && r.id === userId ? ' <small class="hint">(tú)</small>' : ''}</span><span class="mark px">${fmtPts(r.score)} / 10</span></li>`).join('')}</ol>`;
@@ -478,58 +610,104 @@ function dailyView() {
   const date = crDate(), mine = daily[date];
   const past = Object.entries(daily).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 7);
   return `${screenHead('Reto del día')}<main class="${F.newScreen ? 'enter' : ''}">
-    <div class="box"><p class="q">${mine ? `Hoy hiciste <b>${fmtPts(mine.score)} / 10</b>.` : 'Todavía no has jugado el reto de hoy.'}</p>
+    <div class="box"><p class="q">${mine ? `Hoy hizo <b>${fmtPts(mine.score)} / 10</b>.` : 'Todavía no ha jugado el reto de hoy.'}</p>
       <p class="hint">10 preguntas, las mismas para todos. Hay un reto nuevo cada día a medianoche, hora de Costa Rica. Racha: ${plural(dailyStreak(), 'día', 'días')} seguidos.</p>
       ${mine ? '' : '<div class="row end" style="margin-top:12px"><button class="btn" data-act="playDaily">Jugar el reto</button></div>'}</div>
     <div class="setup"><div class="box field"><span class="l px">Tabla de hoy</span>${boardHtml()}</div>
-      <div class="box field"><span class="l px">Tus últimos retos</span>${past.length ? `<ol class="olist plain">${past.map(([d, r]) => `<li class="ok"><span class="tx">${d}</span><span class="mark px">${fmtPts(r.score)} / 10</span></li>`).join('')}</ol>` : '<p class="hint">Aquí aparecerán tus resultados.</p>'}</div></div>
+      <div class="box field"><span class="l px">Sus últimos retos</span>${past.length ? `<ol class="olist plain">${past.map(([d, r]) => `<li class="ok"><span class="tx">${d}</span><span class="mark px">${fmtPts(r.score)} / 10</span></li>`).join('')}</ol>` : '<p class="hint">Aquí van a aparecer sus resultados.</p>'}</div></div>
   </main>`;
 }
 function medalsHtml(name) {
   const have = new Set(records.medals?.[name] || []);
-  return `<div class="medals">${MEDALS.map(m => `<div class="medal ${have.has(m.id) ? 'on' : ''}" title="${esc(m.how)}"><span class="mico" style="--mc:${m.color}">${pixSvg(m.pix, have.has(m.id) ? m.color : 'currentColor')}</span><b>${m.name}</b><span class="hint">${m.how}</span></div>`).join('')}</div>`;
+  return MEDAL_CATS.map(cat => {
+    const list = MEDALS.filter(m => m.cat === cat), n = list.filter(m => have.has(m.id)).length;
+    return `<div class="mcat"><span class="l px">${cat}${cat === 'En línea' ? ' · próximamente' : ` · ${n} de ${list.length}`}</span><div class="medals">${list.map(m => {
+      const on = have.has(m.id);
+      return `<div class="medal ${on ? 'on' : ''} ${m.soon ? 'soon' : ''}" title="${esc(m.how)}"><span class="mico" style="--mc:${m.color}">${pixSvg(m.pix, on ? m.color : 'currentColor')}</span><b>${m.name}</b><span class="hint">${m.how}</span></div>`;
+    }).join('')}</div></div>`;
+  }).join('');
 }
 
 // ---------- pantallas fuera de la partida ----------
 function titleView() {
   return `<div class="title" data-act="press">${scene()}
     <div class="wordmark"><span class="wm2 px"><b>JUAS</b><i>mon</i></span><span class="wm3 px">Trivia para entrenadores</span></div>
-    <div class="press"><b>Pulsa START</b><span class="px">${TOUCH ? 'Toca la pantalla' : 'Pulsa Enter'}</span></div></div>`;
+    <div class="press"><b>Presione START</b><span class="px">${TOUCH ? 'Toque la pantalla' : 'Presione Enter'}</span></div></div>`;
 }
 
-function cart(act, title, desc, icon, color, i, wide = false) {
-  return `<button class="cart ${wide ? 'wide' : ''}" data-act="${act}" style="--cc:${color};--i:${i}"><span class="ico">${pixSvg(PIX[icon], '#1d2321')}</span><span class="ct">${title}</span><span class="cd">${desc}</span></button>`;
+function tile(act, title, desc, icon, color, i, badgeTxt = '') {
+  return `<button class="tile" data-act="${act}" style="--cc:${color};--i:${i}"><span class="ico">${pixSvg(PIX[icon], '#1d2321')}</span><span class="tt"><b>${title}</b><span>${desc}</span></span>${badgeTxt ? `<span class="nbadge px">${badgeTxt}</span>` : ''}</button>`;
 }
+const reportsBtn = () => `<button class="ibtn flagbtn" data-act="reports" aria-label="Reportes${reports.length ? ` (${reports.length})` : ''}">${pixSvg(PIX.flag, 'currentColor')}${reports.length ? `<span class="count">${reports.length > 99 ? '99+' : reports.length}</span>` : ''}</button>`;
 
+// Menú principal: tarjeta de entrenador, jugar y un mosaico con lo demás.
 function menuView() {
   const saved = store.load('pt-save', null);
   let cont = '';
   if (saved?.state) {
     const s = saved.state;
-    const who = s.players.map((p, i) => `${esc(p.name)} ${fmtPts(s.scores[i])}`).join(' · ');
-    const what = s.config.type === 'clasica' ? (E.isMixed(s) ? `Pregunta ${s.qi + 1} de ${E.questionsPerRound(s)}` : `Ronda ${s.ri + 1} de ${s.config.rounds.length}`) : E.GAME_TYPES[s.config.type].name;
-    cont = cart('continue', 'Continuar partida', `${what} · ${who}`, 'play', 'var(--yellow)', 0, true);
+    const what = s.config.daily ? 'Reto del día' : s.config.type === 'clasica' ? (E.isMixed(s) ? `Pregunta ${s.qi + 1} de ${E.questionsPerRound(s)}` : `Ronda ${s.ri + 1} de ${s.config.rounds.length}`) : s.config.type === 'supervivencia' ? `Supervivencia · ${plural(s.lives ?? 0, 'vida', 'vidas')}` : E.GAME_TYPES[s.config.type].name;
+    const who = s.players.length > 1 ? ' · ' + s.players.map((p, i) => `${esc(p.name)} ${fmtPts(s.scores[i])}`).join(' · ') : ` · ${fmtPts(s.scores[0])} ${s.scores[0] === 1 ? 'punto' : 'puntos'}`;
+    cont = `<button class="contbtn" data-act="continue">${pixSvg(PIX.play, '#1d2321')}<span><b class="px">Continuar partida</b><span>${what}${who}</span></span></button>`;
   }
   const me = myName(), xp = records.xp[me] || 0, rk = rankOf(xp);
-  return `<div class="menu-screen">${scene()}<div class="menu-inner">
-    <div class="row between"><button class="mini-wm" data-act="title"><b>JUAS</b><i>mon</i></button>${soundBtn()}</div>
-    <div class="row"><button class="rankchip linkchip" data-act="profile" aria-label="Mi perfil">${avatar()}<span class="px">${esc(me)}</span><span>Rango: <b>${rk.name}</b> · ${fmtPts(xp)} XP${rk.next ? ` · faltan ${fmtPts(rk.next[0] - xp)} para ${rk.next[1]}` : ''}</span></button>
-      <button class="rankchip linkchip" data-act="reports">${FLAG_SVG}<span>Reportes${reports.length ? ` (${reports.length})` : ''}</span></button>
-      ${installEvt && !standalone() ? '<button class="rankchip linkchip install" data-act="install"><span>⬇ Instalar app</span></button>' : ''}</div>
-    <div class="carts">${cont}
-      ${cart('solo', '1 jugador', 'Clásica, supervivencia o contrarreloj.', 'one', 'var(--red)', 1)}
-      ${cart('multi', 'Multijugador', 'De 2 a 4 jugadores en la misma pantalla.', 'two', 'var(--blue)', 2)}
-      ${cart('daily', 'Reto del día', daily[crDate()] ? `Hoy: ${fmtPts(daily[crDate()].score)} / 10. Vuelve mañana por otro.` : `10 preguntas, las mismas para todos. Racha: ${plural(dailyStreak(), 'día', 'días')}.`, 'star', '#2f6fdb', 3, false)}
-      ${cart('roscoSetup', 'Juasrosco', 'Una pista por cada letra del abecedario. Solo o en duelo.', 'ring', '#e8722a', 3)}
-      ${cart('custom', 'Mis preguntas', custom.length ? `${plural(custom.length, 'pregunta propia', 'preguntas propias')}.` : 'Escriban sus propias preguntas para retarse.', 'pencil', 'var(--yellow)', 4)}
-      ${cart('records', 'Récords y medallas', `Medallas: ${(records.medals?.[me] || []).length} de 8. Tus marcas, tu rango y los duelos.`, 'trophy', 'var(--ok)', 5)}
-    </div></div></div>`;
+  const pct = rk.next ? Math.round((xp - RANKS[rk.i][0]) / (rk.next[0] - RANKS[rk.i][0]) * 100) : 100;
+  const medals = myMedals().size, total = MEDALS.filter(m => !m.soon).length;
+  const today = daily[crDate()];
+  return `<div class="home">
+    <div class="topbar"><button class="mini-wm" data-act="title"><b>JUAS</b><i>mon</i></button><div class="tools">${reportsBtn()}${soundBtn()}</div></div>
+    <button class="tcard" data-act="profile" aria-label="Mi perfil: ${esc(me)}">
+      <span class="trow">${avatar(profile, 'big')}<span class="tinfo">
+        <span class="tname"><b class="px">${esc(me)}</b><span class="rk">${rk.name}</span></span>
+        <span class="xpbar"><i style="width:${pct}%"></i></span>
+        <span class="hint">${fmtPts(xp)} XP${rk.next ? ` · faltan ${fmtPts(rk.next[0] - xp)} para ${rk.next[1]}` : ' · ¡rango máximo!'}</span>
+      </span></span>
+      <span class="stats3">
+        <span><small class="px">Medallas</small><b>${medals} / ${total}</b></span>
+        <span><small class="px">Racha</small><b>${plural(dailyStreak(), 'día', 'días')}</b></span>
+        <span><small class="px">Duelos</small><b>${records.duels[me] || 0} ganados</b></span>
+      </span>
+    </button>
+    ${cont}
+    <div class="bigplay">
+      <button class="bp" data-act="solo" style="--cc:var(--red);--i:1">${pixSvg(PIX.one, '#fff')}<span><b class="px">1 jugador</b><span>Clásica, supervivencia o contrarreloj</span></span></button>
+      <button class="bp" data-act="online" style="--cc:var(--blue);--i:2">${pixSvg(PIX.globe, '#fff')}<span><b class="px">En línea</b><span>Rete a un compa con un código</span></span></button>
+    </div>
+    <div class="tiles">
+      ${tile('daily', 'Reto del día', today ? `Hoy: ${fmtPts(today.score)} / 10` : '¡Nuevo hoy!', 'star', '#2f6fdb', 3, today ? '' : 'NUEVO')}
+      ${tile('roscoSetup', 'Juasrosco', 'De la A a la Z', 'ring', '#e8722a', 4)}
+      ${tile('custom', 'Mis preguntas', custom.length ? plural(custom.length, 'propia', 'propias') : 'Escriba las suyas', 'pencil', 'var(--yellow)', 5)}
+      ${tile('records', 'Medallas', 'Récords y logros', 'trophy', 'var(--ok)', 6)}
+    </div>
+    ${installEvt && !standalone() ? '<button class="installbtn" data-act="install">⬇ Instalar JUASmon en este celular</button>' : ''}
+  </div>`;
 }
 
 function screenHead(title) {
   return `<header class="hud"><div class="topline"><div class="screen-head"><button class="ibtn" data-act="menu" aria-label="Volver al menú">◀ <span>Menú</span></button><h1 class="px">${title}</h1></div><div class="tools">${soundBtn()}</div></div></header>`;
 }
 
+// Regiones por generación, para elegir de dónde salen los Pokémon.
+const REGIONS = { 1: 'Kanto', 2: 'Johto', 3: 'Hoenn', 4: 'Sinnoh', 5: 'Teselia', 6: 'Kalos', 7: 'Alola', 8: 'Galar', 9: 'Paldea' };
+const GEN_PRESETS = [['all', 'Todas', [1, 2, 3, 4, 5, 6, 7, 8, 9]], ['clasicas', 'Clásicas (1–4)', [1, 2, 3, 4]], ['nuevas', 'Nuevas (5–9)', [5, 6, 7, 8, 9]]];
+// Atajos para no tener que marcar formato por formato.
+const FMT_PRESETS = [
+  ['todo', 'Todo', Object.keys(E.FORMATS), 'Los 14 formatos mezclados.'],
+  ['clasico', 'Clásico', ['preguntas', 'vf', 'masomenos', 'intruso', 'quien', 'pokedex', 'idioma'], 'Opciones y adivinanzas, sin escribir.'],
+  ['escribir', 'A escribir', ['escribir', 'bomba', 'pokedle', 'quien', 'pokedex', 'idioma'], 'Todo se responde escribiendo.'],
+  ['rapido', 'Rápido', ['vf', 'masomenos', 'preguntas', 'intruso', 'multi'], 'Preguntas cortas, de un toque.'],
+];
+const CAT_PRESETS = [
+  ['todos', 'Todos', Object.keys(E.CATS)],
+  ['combate', 'Pokémon y combates', ['pokemon', 'mecanicas', 'competitivo']],
+  ['juegos', 'Juegos e historia', ['juegos', 'historia', 'regiones', 'personajes']],
+];
+const sameSet = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+let openPanel = { fmts: false, cats: false };
+function regionPicker(act = 'gen', presetAct = 'gens', gens = cfg.gens) {
+  return `<div class="row wrap">${GEN_PRESETS.map(([k, l, g]) => tog(presetAct, k, sameSet(gens, g), l)).join('')}</div>
+    <div class="togs regions">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(g => tog(act, g, gens.includes(g), `${REGIONS[g]} <small>${g}</small>`)).join('')}</div>`;
+}
 function commonSettings(type, solo = false) {
   const perTitle = solo ? 'Preguntas por partida' : 'Preguntas por jugador';
   const perOpts = solo ? [5, 10, 15] : [3, 5, 8];
@@ -537,27 +715,33 @@ function commonSettings(type, solo = false) {
   const mixed = type !== 'clasica' || cfg.structure === 'mezclada';
   const qFormats = ['preguntas', 'vf', 'orden', 'pares', 'multi', 'escribir', 'bomba', 'intruso', 'estimacion'];
   const banned = type === 'contrarreloj' ? ['bomba', 'pokedle'] : [];
-  const showCats = mixed ? cfg.formats.some(f => qFormats.includes(f)) : cfg.rounds.some(r => ['preguntas', 'intruso', 'estimacion'].includes(r));
+  const allowed = Object.keys(E.FORMATS).filter(k => !banned.includes(k));
+  const chosen = cfg.formats.filter(f => allowed.includes(f));
+  const showCats = mixed ? chosen.some(f => qFormats.includes(f)) : cfg.rounds.some(r => qFormats.includes(r));
+  const fmtPreset = FMT_PRESETS.find(([, , f]) => sameSet(chosen, f.filter(x => allowed.includes(x))));
+  const catPreset = CAT_PRESETS.find(([, , c]) => sameSet(cfg.cats, c));
   return `
     <div class="box field full">
       ${type === 'clasica' ? `<span class="l px">Estructura</span><div class="togs">${tog('structure', 'mezclada', cfg.structure === 'mezclada', 'Mezclada')}${tog('structure', 'rondas', cfg.structure === 'rondas', 'Por rondas')}</div>` : ''}
       ${mixed ? `<span class="l px">Formatos</span>
-        <div class="togs">${Object.entries(E.FORMATS).filter(([k]) => !banned.includes(k)).map(([k, n]) => tog('fmt', k, cfg.formats.includes(k), n)).join('')}${tog('fmts', 'all', Object.keys(E.FORMATS).every(f => cfg.formats.includes(f)), 'Todos')}</div>
-        <p class="hint">Cada pregunta sale de uno de los formatos elegidos, al azar.</p>`
+        <div class="presets">${FMT_PRESETS.map(([k, l, , d]) => `<button class="preset" data-act="fmtPreset" data-val="${k}" aria-pressed="${fmtPreset?.[0] === k}"><b>${l}</b><span>${d}</span></button>`).join('')}</div>
+        <button class="linkish" data-act="panel" data-val="fmts" aria-expanded="${openPanel.fmts}">${openPanel.fmts ? '▾' : '▸'} Personalizar formatos <span class="hint">(${chosen.length} de ${allowed.length})</span></button>
+        ${openPanel.fmts ? `<div class="togs">${allowed.map(k => tog('fmt', k, cfg.formats.includes(k), E.FORMATS[k])).join('')}</div>` : ''}`
       : `<span class="l px">Rondas</span>
-        <div class="togs">${E.ROUND_MODES.map(k => tog('round', k, cfg.rounds.includes(k), E.MODES[k].name)).join('')}</div>
-        <p class="hint">Se juegan en este orden: ${cfg.rounds.map(r => E.MODES[r].name).join(', ')}.</p>`}
+        <div class="togs">${E.ROUND_MODES.map(k => { const i = cfg.rounds.indexOf(k); return tog('round', k, i >= 0, `${i >= 0 ? `<b class="ord">${i + 1}</b> ` : ''}${E.MODES[k].name}`); }).join('')}</div>
+        <p class="hint">${cfg.rounds.length ? `Se juegan en el orden en que las marque: ${cfg.rounds.map(r => E.MODES[r].name).join(', ')}.` : 'Marque al menos una ronda.'}</p>`}
       ${type === 'clasica' ? `<span class="l px">${mixed ? perTitle : solo ? 'Preguntas por ronda' : 'Preguntas por jugador y ronda'}</span><div class="togs">${perOpts.map(n => tog(solo ? 'soloPer' : 'per', n, perVal === n, n)).join('')}</div>` : ''}
       ${type === 'contrarreloj' ? `<span class="l px">Duración</span><div class="togs">${[30, 60, 90].map(n => tog('soloDur', n, cfg.solo.duration === n, `${n} s`)).join('')}</div>` : ''}
     </div>
     ${showCats ? `<div class="box field full">
       <span class="l px">Temas de las preguntas</span>
-      <div class="togs">${Object.entries(E.CATS).map(([k, n]) => tog('cat', k, cfg.cats.includes(k), n)).join('')}${tog('cats', 'all', cfg.cats.length === Object.keys(E.CATS).length, 'Todos')}</div>
+      <div class="row wrap">${CAT_PRESETS.map(([k, l]) => tog('catPreset', k, catPreset?.[0] === k, l)).join('')}
+        <button class="linkish" data-act="panel" data-val="cats" aria-expanded="${openPanel.cats}">${openPanel.cats ? '▾' : '▸'} Personalizar <span class="hint">(${cfg.cats.length} de ${Object.keys(E.CATS).length})</span></button></div>
+      ${openPanel.cats ? `<div class="togs">${Object.entries(E.CATS).map(([k, n]) => tog('cat', k, cfg.cats.includes(k), n)).join('')}</div>` : ''}
     </div>` : ''}
     <div class="box field">
-      <span class="l px">Generaciones</span>
-      <div class="togs">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(g => tog('gen', g, cfg.gens.includes(g), g)).join('')}</div>
-      <div class="row">${tog('gens', 'all', cfg.gens.length === 9, 'Todas')}${tog('gens', 'retro', cfg.gens.join() === '1,2,3', 'Solo 1 a 3')}</div>
+      <span class="l px">Regiones de los Pokémon</span>
+      ${regionPicker()}
     </div>
     ${type !== 'contrarreloj' ? `<div class="box field">
         <span class="l px">Adivinar Pokémon</span><div class="togs">${tog('idioma', 'opciones', cfg.idiomaMode === 'opciones', '4 opciones')}${tog('idioma', 'escribir', cfg.idiomaMode === 'escribir', 'Escribir el nombre')}</div>
@@ -566,22 +750,17 @@ function commonSettings(type, solo = false) {
 }
 
 function roscoSetupView() {
-  const p = cfg.rosco.players, rec = records.solo[`rosco:${cfg.rosco.time}`];
+  const rec = records.solo[`rosco:${cfg.rosco.time}`];
   return `${screenHead('Juasrosco')}<main class="${F.newScreen ? 'enter' : ''}">
-    <div class="box"><p class="q">Una pista por cada letra. Si aciertas, sigues; si fallas o dices «¡Paso!», le toca al siguiente. Las letras que pases vuelven en la siguiente vuelta.</p>
-      <p class="hint">Gana quien acierte más letras; si empatan, quien tenga menos errores.${rec ? ` Tu récord en solitario: ${rec.best} letras.` : ''}</p></div>
+    <div class="box"><p class="q">Una pista por cada letra, de la A a la Z. Si acierta, sigue; si falla o dice «¡Paso!», pasa a la siguiente. Las letras que pase vuelven en la siguiente vuelta.</p>
+      <p class="hint">${rec ? `Su récord: ${rec.best} letras.` : 'Todavía no tiene récord en el rosco.'} El duelo de rosco va a ser en línea.</p></div>
     <div class="setup">
       <div class="box field">
-        <span class="l px">Jugadores</span>
-        ${p.map((n, i) => `<div class="row"><input class="input" data-rplayer="${i}" value="${esc(n)}" maxlength="16" aria-label="Jugador ${i + 1}" style="flex:1;border-left:8px solid ${pColor(i)}">${p.length > 1 ? `<button class="tog" data-act="rdel" data-val="${i}" aria-label="Quitar jugador">✕</button>` : ''}</div>`).join('')}
-        ${p.length < 4 ? `<div><button class="tog" data-act="radd">+ Agregar jugador</button></div>` : ''}
-        <p class="hint">Con un solo jugador juegas contra tu récord.</p>
+        <span class="l px">Tiempo</span><div class="togs">${[120, 150, 200].map(n => tog('rtime', n, cfg.rosco.time === n, `${n} s`)).join('')}</div>
       </div>
       <div class="box field">
-        <span class="l px">Tiempo por jugador</span><div class="togs">${[120, 150, 200].map(n => tog('rtime', n, cfg.rosco.time === n, `${n} s`)).join('')}</div>
-        <span class="l px">Generaciones de los Pokémon</span>
-        <div class="togs">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(g => tog('gen', g, cfg.gens.includes(g), g)).join('')}</div>
-        <div class="row">${tog('gens', 'all', cfg.gens.length === 9, 'Todas')}${tog('gens', 'retro', cfg.gens.join() === '1,2,3', 'Solo 1 a 3')}</div>
+        <span class="l px">Regiones de los Pokémon</span>
+        ${regionPicker()}
       </div>
     </div>
     <div class="row end"><button class="btn" data-act="startRosco">¡Comenzar!</button></div>
@@ -597,7 +776,7 @@ function soloView() {
   return `${screenHead('1 jugador')}<main class="${F.newScreen ? 'enter' : ''}">
     <div class="modes">${Object.entries(E.GAME_TYPES).filter(([k]) => k !== 'rosco').map(([k, g]) => `<button class="mode" data-act="soloType" data-val="${k}" aria-pressed="${t === k}"><b>${g.name}</b><span>${g.blurb}</span><small>${recFor(k)}</small></button>`).join('')}</div>
     <div class="setup">
-      <div class="box field full"><span class="l px">Juegas como</span><div class="row"><button class="rankchip linkchip" data-act="profile">${avatar()}<span class="px">${esc(myName())}</span><span class="hint">Cambiar</span></button></div></div>
+      <div class="box field full"><span class="l px">Juega como</span><div class="row"><button class="rankchip linkchip" data-act="profile">${avatar()}<span class="px">${esc(myName())}</span><span class="hint">Cambiar</span></button></div></div>
       ${commonSettings(t, true)}
     </div>
     <div class="row end">${flash ? `<span class="hint">${esc(flash)}</span>` : ''}<button class="btn" data-act="startSolo">¡Comenzar!</button></div>
@@ -634,8 +813,8 @@ function customView() {
   <div class="box field">
     <span class="l px">Guardadas (${custom.length})</span>
     ${custom.length ? `<ul class="list">${custom.map((q, i) => `<li><span>${esc(q.q)} <span class="hint">· ${esc(q.a)}</span></span><button class="tog" data-act="delq" data-val="${i}" aria-label="Borrar">✕</button></li>`).join('')}</ul>` : '<p class="hint">Todavía no hay preguntas propias.</p>'}
-    <p class="hint">Se mezclan en Pokepreguntas y se guardan en este navegador. Para pasárselas a tu amigo, copia el texto y que él lo pegue abajo.</p>
-    <textarea class="input" id="c-io" rows="3" placeholder="Pega aquí preguntas copiadas"></textarea>
+    <p class="hint">Salen mezcladas en Opción múltiple y se guardan en este celular. Para pasárselas a su compa, copie el texto y que él lo pegue abajo.</p>
+    <textarea class="input" id="c-io" rows="3" placeholder="Pegue aquí preguntas copiadas"></textarea>
     <div class="row end"><button class="btn ghost" data-act="copyq">Copiar todas</button><button class="btn ghost" data-act="importq">Agregar desde texto</button></div>
   </div></main>`;
 }
@@ -655,10 +834,10 @@ function reportsView() {
   const date = t => new Date(t).toLocaleString('es', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   return `${screenHead('Reportes')}<main class="${F.newScreen ? 'enter' : ''}">
     <div class="box"><p class="q">Preguntas que marcaron con «Reportar».</p>
-      <p class="hint">${dbRef ? (dbRef.kind === 'firebase' ? 'Se guardan en la nube, así se ven desde cualquier dispositivo.' : 'Se guardan en la página, así Claude los puede leer y corregir en la siguiente versión.') : 'Sin conexión a la nube: se guardan en este dispositivo y se enviarán cuando haya conexión.'}</p>
+      <p class="hint">${dbRef ? (dbRef.kind === 'firebase' ? 'Se guardan en la nube, así se ven desde cualquier celular.' : 'Se guardan en la página, así Claude los puede leer y corregir en la siguiente versión.') : 'Sin conexión a la nube: se guardan en este celular y se envían cuando haya conexión.'}</p>
       ${all.length ? '<div class="row end"><button class="btn ghost" data-act="copy-reports">Copiar para Claude</button></div>' : ''}</div>
-    ${all.length ? `<ul class="list reports">${all.map(r => `<li><div class="rp"><span class="px catl">${esc(r.data.reason || '')}</span><span>${esc(r.data.summary || '')}</span>${r.data.note ? `<span class="hint">«${esc(r.data.note)}»</span>` : ''}<span class="hint">${date(r.data.at)}${r.data.reporter ? ` · ${esc(r.data.reporter)}` : ''} · ${r.synced ? 'Enviado' : 'Pendiente de enviar'}${r.mine ? '' : ' · de otro dispositivo'}</span></div><button class="tog" data-act="del-report" data-val="${esc(r.id)}" aria-label="Borrar reporte">✕</button></li>`).join('')}</ul>`
-      : '<div class="box"><p class="hint">Todavía no hay reportes. Después de responder una pregunta, toca «Reportar» si algo está mal.</p></div>'}
+    ${all.length ? `<ul class="list reports">${all.map(r => `<li><div class="rp"><span class="px catl">${esc(r.data.reason || '')}</span><span>${esc(r.data.summary || '')}</span>${r.data.note ? `<span class="hint">«${esc(r.data.note)}»</span>` : ''}<span class="hint">${date(r.data.at)}${r.data.reporter ? ` · ${esc(r.data.reporter)}` : ''} · ${r.synced ? 'Enviado' : 'Pendiente de enviar'}${r.mine ? '' : ' · de otro celular'}</span></div><button class="tog" data-act="del-report" data-val="${esc(r.id)}" aria-label="Borrar reporte">✕</button></li>`).join('')}</ul>`
+      : '<div class="box"><p class="hint">Todavía no hay reportes. Después de responder una pregunta, toque «Reportar» si algo está mal.</p></div>'}
   </main>`;
 }
 
@@ -666,18 +845,19 @@ function recordsView() {
   const solo = Object.values(records.solo).sort((a, b) => a.label.localeCompare(b.label));
   const names = [...new Set([...Object.keys(records.xp), ...Object.keys(records.duels)])].sort((a, b) => (records.xp[b] || 0) - (records.xp[a] || 0));
   const date = t => new Date(t).toLocaleDateString('es', { day: 'numeric', month: 'short' });
-  return `${screenHead('Récords')}<main class="${F.newScreen ? 'enter' : ''}">
+  const total = MEDALS.filter(m => !m.soon).length, me = myName();
+  return `${screenHead('Medallas')}<main class="${F.newScreen ? 'enter' : ''}">
+    <div class="box field"><span class="l px">Medallas de ${esc(me)} · ${myMedals().size} de ${total}</span>${medalsHtml(me)}
+      ${Object.keys(records.medals || {}).filter(n => n !== me).map(n => `<p class="hint">${esc(n)}: ${(records.medals[n] || []).length} de ${total} medallas.</p>`).join('')}</div>
     <div class="setup">
-      <div class="box field"><span class="l px">1 jugador</span>
-        ${solo.length ? `<div class="scroll"><table><thead><tr><th>Modo</th><th>Mejor</th><th>Racha</th><th>Fecha</th></tr></thead><tbody>${solo.map(r => `<tr><td>${esc(r.label)}</td><td class="px" style="font-size:12px">${fmtPts(r.best)}</td><td>${r.streak || 0}</td><td>${date(r.at)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="hint">Juega una partida de 1 jugador para estrenar la tabla.</p>'}
+      <div class="box field"><span class="l px">Récords de 1 jugador</span>
+        ${solo.length ? `<div class="scroll"><table><thead><tr><th>Modo</th><th>Mejor</th><th>Racha</th><th>Fecha</th></tr></thead><tbody>${solo.map(r => `<tr><td>${esc(r.label)}</td><td class="px" style="font-size:12px">${fmtPts(r.best)}</td><td>${r.streak || 0}</td><td>${date(r.at)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="hint">Juegue una partida de 1 jugador para estrenar la tabla.</p>'}
       </div>
       <div class="box field"><span class="l px">Rangos y duelos</span>
         ${names.length ? `<div class="scroll"><table><thead><tr><th>Entrenador</th><th>XP</th><th>Rango</th><th>Duelos</th></tr></thead><tbody>${names.map(n => { const xp = records.xp[n] || 0, rk = rankOf(xp); return `<tr><td>${esc(n)}</td><td>${fmtPts(xp)}</td><td class="${rk.next ? '' : 'top'}">${rk.name}</td><td>${records.duels[n] || 0}</td></tr>`; }).join('')}</tbody></table></div>
-          <p class="hint">Cada punto que ganas suma 1 XP. Rangos: ${RANKS.map(r => `${r[1]} (${r[0]})`).join(' → ')}.</p><p class="hint">${plural(records.games || 0, 'partida jugada', 'partidas jugadas')} en multijugador. Los empates no cuentan como duelo ganado.</p>` : '<p class="hint">Juega una partida para estrenar la tabla.</p>'}
+          <p class="hint">Cada punto que gane suma 1 XP. Rangos: ${RANKS.map(r => `${r[1]} (${r[0]})`).join(' → ')}.</p><p class="hint">Los empates no cuentan como duelo ganado.</p>` : '<p class="hint">Juegue una partida para estrenar la tabla.</p>'}
       </div>
     </div>
-    <div class="box field"><span class="l px">Medallas de ${esc(myName())}</span>${medalsHtml(myName())}
-      ${Object.keys(records.medals || {}).filter(n => n !== (myName())).map(n => `<p class="hint">${esc(n)}: ${(records.medals[n] || []).length} de 8 medallas.</p>`).join('')}</div>
     <div class="row end"><button class="btn ghost" data-act="ask-reset">Borrar récords</button></div>
   </main>`;
 }
@@ -737,18 +917,18 @@ function introView() {
   const isStart = s.phase === 'intro';
   if (c.type === 'rosco') {
     return `<main class="enter"><div class="box"><h2 class="px" data-tw="Juasrosco">Juasrosco</h2>
-      <p class="q">27 letras, una pista por letra. Si aciertas, sigues. Si fallas o dices «¡Paso!»${s.players.length > 1 ? ', le toca al siguiente' : ', pasas a la siguiente letra'}. Las letras pasadas vuelven en la siguiente vuelta.</p>
-      <p class="hint">${s.players.length > 1 ? `Cada uno tiene ${c.roscoTime} segundos y su propio rosco.` : `Tienes ${c.roscoTime} segundos.`} Puedes escribir sin tildes; perdonamos un error de tipeo en palabras largas.</p>
+      <p class="q">27 letras, una pista por letra. Si acierta, sigue. Si falla o dice «¡Paso!»${s.players.length > 1 ? ', le toca al siguiente' : ', pasa a la siguiente letra'}. Las letras pasadas vuelven en la siguiente vuelta.</p>
+      <p class="hint">${s.players.length > 1 ? `Cada uno tiene ${c.roscoTime} segundos y su propio rosco.` : `Tiene ${c.roscoTime} segundos.`} Puede escribir sin tildes; se perdona un error de tipeo en palabras de 5 letras o más.</p>
       <div class="row end" style="margin-top:14px"><button class="btn" data-act="begin" id="nextbtn">¡Vamos!</button></div></div></main>`;
   }
   if (c.type !== 'clasica' || E.isMixed(s)) {
     const g = c.daily ? { name: 'Reto del día' } : c.type === 'clasica' ? { name: 'Partida mezclada' } : E.GAME_TYPES[c.type];
     const rec = s.players.length === 1 && !c.daily ? records.solo[c.type === 'contrarreloj' ? `contrarreloj:${c.duration}` : c.type === 'clasica' ? `clasica:${c.perPlayer}:mix` : c.type] : null;
-    const how = c.type === 'supervivencia' ? `Tienes ${c.lives} vidas. Cada error te quita una y cada pregunta puede ser de cualquier formato.` : c.type === 'contrarreloj' ? `Tienes ${c.duration} segundos. Responde rápido: cada acierto suma 1 (medio punto si casi) y los errores no restan.` : c.daily ? `10 preguntas, las mismas para todos los que jueguen hoy. Solo cuenta el primer intento: si sales a mitad, se guarda lo que llevas. ${SCORING.mezcla}` : `${plural(E.questionsPerRound(s), 'pregunta', 'preguntas')} de todos los formatos elegidos, mezclados al azar. ${SCORING.mezcla}`;
+    const how = c.type === 'supervivencia' ? `Tiene ${c.lives} vidas. Cada error le quita una y cada pregunta puede ser de cualquier formato.` : c.type === 'contrarreloj' ? `Tiene ${c.duration} segundos. Responda rapidito: cada acierto suma 1 (medio punto si casi) y los errores no restan.` : c.daily ? `10 preguntas, las mismas para todos los que jueguen hoy. Solo cuenta el primer intento: si se sale a mitad, se guarda lo que lleve. ${SCORING.mezcla}` : `${plural(E.questionsPerRound(s), 'pregunta', 'preguntas')} de todos los formatos elegidos, mezclados al azar. ${SCORING.mezcla}`;
     return `<main class="enter"><div class="box">
       <h2 class="px" data-tw="${esc(g.name)}">${esc(g.name)}</h2>
       <p class="q">${how}</p>
-      <p class="hint">${s.players.length > 1 ? `Empieza ${esc(s.players[0].name)}.` : rec ? `Tu récord es ${fmtPts(rec.best)}.` : 'Todavía no tienes récord en este modo.'}</p>
+      <p class="hint">${s.players.length > 1 ? `Empieza ${esc(s.players[0].name)}.` : rec ? `Su récord es ${fmtPts(rec.best)}.` : 'Todavía no tiene récord en este modo.'}</p>
       <div class="row end" style="margin-top:14px"><button class="btn" data-act="begin" id="nextbtn">¡Vamos!</button></div></div></main>`;
   }
   const nextMode = isStart ? c.rounds[0] : c.rounds[s.ri + 1];
@@ -760,7 +940,7 @@ function introView() {
     <div class="meta px"><span>Ronda ${roundNo} de ${c.rounds.length}</span><span>${plural(E.questionsPerRound(s), 'pregunta', 'preguntas')}</span></div>
     <h2 class="px" style="margin-top:14px;font-size:clamp(20px,4vw,30px)" data-tw="${esc(nm.name)}">${esc(nm.name)}</h2>
     <p class="q">${nm.blurb}</p>
-    <p class="hint">${SCORING[nextMode]}${c.timer ? ` Tienen ${c.timer} segundos por pregunta.` : ''}</p>
+    <p class="hint">${SCORING[nextMode]}${c.timer ? ` ${s.players.length > 1 ? 'Tienen' : 'Tiene'} ${c.timer} segundos por pregunta.` : ''}</p>
     <div class="row between" style="margin-top:14px">
       ${s.players.length > 1 ? `<span class="turn px" style="--c:${pColor(0)}">Empieza ${esc(s.players[0].name)}</span>` : '<span></span>'}
       <button class="btn" data-act="${isStart ? 'begin' : 'next'}" id="nextbtn">Empezar ronda</button>
@@ -784,7 +964,7 @@ function timerBar() {
 
 function verdict() {
   const r = state.result;
-  const txt = r.timeout ? '¡Se acabó el tiempo!' : r.correct ? `¡JUAS${r.streak >= 3 ? ' crítico' : ''}! +${fmtPts(r.points)}` : r.partial ? `¡Casi! +${fmtPts(r.points)}` : state.lives === 0 ? '¡Fallaste! Sin vidas.' : '¡Fallaste!';
+  const txt = r.timeout ? '¡Se acabó el tiempo!' : r.correct ? (r.streak >= 3 ? `¡Va con todo! +${fmtPts(r.points)}` : `¡JUAS! +${fmtPts(r.points)}`) : r.partial ? `¡Casi! +${fmtPts(r.points)}` : state.lives === 0 ? 'Diay, no. Sin vidas.' : 'Diay, no.';
   return `<p class="verdict px ${r.correct ? 'ok' : r.partial ? 'mid' : 'bad'}" data-tw="${esc(txt)}">${esc(txt)}</p>`;
 }
 
@@ -825,7 +1005,7 @@ function guessAnswer(q, rev, worthTxt, hintBtn) {
   if (!rev) {
     if (mode === 'escribir') {
       return `<div class="box field"><label class="field"><span class="hint">¿Qué Pokémon es?${worthTxt}</span>
-        <input class="input" id="typed" data-ac="pokemon" autocomplete="off" placeholder="Escribe el nombre"></label>${datalist('pokemon')}
+        <input class="input" id="typed" data-ac="pokemon" autocomplete="off" placeholder="Escriba el nombre"></label>${datalist('pokemon')}
         <div class="row end">${hintBtn}<button class="btn" data-act="typed">Responder</button></div></div>`;
     }
     return `<p class="hint">¿Qué Pokémon es?${worthTxt}</p>
@@ -864,7 +1044,7 @@ function estView(q, rev) {
   const multi = !!q.est;
   if (!rev) {
     const start = q.scale === 'log' ? estFromSlider(q, 500) : estFromSlider(q, 500);
-    const who = multi ? `<div class="row"><span class="turn px" style="--c:${pColor(q.est.turn)}">Responde ${esc(state.players[q.est.turn].name)}</span>${q.est.answered.length ? `<span class="hint">Ya respondieron: ${q.est.answered.map(i => esc(state.players[i].name)).join(', ')}. No miren la pantalla del otro.</span>` : ''}</div>` : '';
+    const who = multi ? `<div class="row"><span class="turn px" style="--c:${pColor(q.est.turn)}">Le toca a ${esc(state.players[q.est.turn].name)}</span>${q.est.answered.length ? `<span class="hint">Ya respondieron: ${q.est.answered.map(i => esc(state.players[i].name)).join(', ')}. No miren la pantalla del otro.</span>` : ''}</div>` : '';
     return `${qHead(q, multi ? '<p class="hint" style="margin-top:8px">Todos responden la misma pregunta; el punto es para quien quede más cerca.</p>' : `<p class="hint" style="margin-top:8px">1 punto si quedas muy cerca, medio punto si quedas cerca.</p>`)}
     <div class="box field est">${who}
       <div class="estval"><input class="input estnum" id="est-num" type="number" inputmode="decimal" min="${q.min}" max="${q.max}" step="${q.step}" value="${start}"><span class="px">${esc(q.unit)}</span></div>
@@ -899,10 +1079,10 @@ function pokedleView(q, rev) {
   const left = pd.max - pd.guesses.length;
   if (!rev) {
     const last = pd.last ? `<p class="flash bad keep">${pd.last.why === 'repetido' ? 'Ya lo intentaron' : 'No es un Pokémon'}: ${esc(pd.last.text)}</p>` : '';
-    return `<div class="box"><span class="hint px catl">Pokédle</span><p class="q" style="margin-top:8px">Adivina el Pokémon secreto.</p>
+    return `<div class="box"><span class="hint px catl">Pokédle</span><p class="q" style="margin-top:8px">Adivine el Pokémon secreto.</p>
       <p class="hint">Verde: igual. Amarillo: ese tipo lo tiene, pero en el otro lugar. ▲ el secreto es mayor, ▼ es menor. ${multi ? 'Se turnan; el primero que lo adivine gana el punto.' : '1 punto si lo adivinas en 3 intentos o menos; medio punto hasta 6.'}</p></div>
       <div class="box field">${multi ? `<div><span class="turn px" style="--c:${pColor(pd.turn)}">Turno de ${esc(state.players[pd.turn].name)}</span></div>` : ''}
-        <div class="row"><input class="input" id="typed" data-ac="pokemon" autocomplete="off" placeholder="Escribe un Pokémon" style="flex:1"><button class="btn" data-act="pd-send">Adivinar</button></div>
+        <div class="row"><input class="input" id="typed" data-ac="pokemon" autocomplete="off" placeholder="Escriba un Pokémon" style="flex:1"><button class="btn" data-act="pd-send">Adivinar</button></div>
         ${last}<p class="hint">${plural(left, 'intento restante', 'intentos restantes')}.</p></div>${table ? `<div class="box">${table}</div>` : ''}${datalist('pokemon')}`;
   }
   const a = ctx.byId.get(q.answer), w = state.result.pd.winner;
@@ -921,20 +1101,20 @@ function roscoView() {
     return `<span class="rl ${st[i]} ${i === cur && s.phase === 'rosco' ? 'cur' : ''}" style="left:${50 + 44 * Math.cos(a)}%;top:${50 + 44 * Math.sin(a)}%">${e.L}</span>`;
   }).join('');
   const L = R.last && R.last.player === p && !R.last.pass && !R.last.timeout ? R.last : null;
-  const feedback = L ? (L.ok ? (L.typo ? `<p class="flash ok keep">¡JUAS! Se escribe ${esc(L.answer)}</p>` : `<p class="flash ok keep">¡JUAS! ${esc(L.answer)}</p>`) : `<p class="flash bad keep">No. Era: ${esc(L.answer)}</p>`) : '';
+  const feedback = L ? (L.ok ? (L.typo ? `<p class="flash ok keep">¡JUAS! Se escribe ${esc(L.answer)}</p>` : `<p class="flash ok keep">¡JUAS! ${esc(L.answer)}</p>`) : `<p class="flash bad keep">Diay, no. Era ${esc(L.answer)}</p>`) : '';
   let panel;
   if (!R.ready) {
     const lastOther = R.last && R.last.player !== p ? R.last : null;
     const why = lastOther ? (lastOther.timeout ? `A ${esc(s.players[lastOther.player].name)} se le acabó el tiempo.` : lastOther.pass ? `${esc(s.players[lastOther.player].name)} dijo «¡Paso!».` : `${esc(s.players[lastOther.player].name)} falló: era ${esc(lastOther.answer)}.`) : '';
     panel = `<div class="box rpanel"><p class="hint">${why}</p><p class="big px" style="color:${pColor(p)}" data-tw="${esc('Turno de ' + s.players[p].name)}">Turno de ${esc(s.players[p].name)}</p>
-      <p class="hint">Pásale el dispositivo. Tu reloj empieza cuando pulses «¡Listo!».</p><div class="row end"><button class="btn" data-act="r-ready" id="nextbtn">¡Listo!</button></div></div>`;
+      <p class="hint">Pásele el celular. Su reloj empieza cuando toque «¡Listo!».</p><div class="row end"><button class="btn" data-act="r-ready" id="nextbtn">¡Listo!</button></div></div>`;
   } else {
     const e = board[cur];
     panel = `<div class="box rpanel">
       <div class="rmini"><span class="px">${st.filter(x => x === 'ok').length} aciertos</span><span class="px" id="rtext2">${fmtClock(R.time[p])}</span></div>
       <div class="row between"><span class="rletter px">${e.L}</span><span class="hint px catl">${e.mode === 'contiene' ? `Contiene la ${e.L}` : `Empieza por ${e.L}`}</span></div>
       <p class="q">${richText(e.clue)}</p>
-      <div class="row"><input class="input" id="typed" autocomplete="off" placeholder="Tu respuesta (Enter vacío = ¡Paso!)" style="flex:1"></div>
+      <div class="row"><input class="input" id="typed" autocomplete="off" placeholder="Su respuesta (Enter vacío = ¡Paso!)" style="flex:1"></div>
       <div class="row end"><button class="btn ghost" data-act="r-pass">¡Paso!</button><button class="btn" data-act="r-answer">Responder</button></div>
       ${feedback}</div>`;
   }
@@ -945,12 +1125,13 @@ function roscoView() {
 
 function roscoEnd() {
   const s = state, R = s.rosco, n = s.players.length, w = E.winners(s);
-  const title = n > 1 ? (w.length === 1 ? `¡JUAS! ${w[0].name} gana` : '¡Empate!') : '¡Rosco terminado!';
+  const title = n > 1 ? (w.length === 1 ? `¡${w[0].name} se la jugó!` : TIE_LINE) : '¡Rosco terminado!';
   const color = n > 1 && w.length === 1 ? pColor(w[0].id) : 'var(--ink)';
   const rows = s.players.map((p, i) => `<tr><td><span style="color:${pColor(i)}">●</span> ${esc(p.name)}</td><td class="px" style="font-size:12px">${s.scores[i]}</td><td>${R.errors[i]}</td><td>${R.status[i].filter(x => x === 'p').length}</td></tr>`).join('');
   const details = s.players.map((p, i) => `<details class="box"><summary class="px catl">Respuestas de ${esc(p.name)}</summary><ol class="olist plain">${R.boards[i].map((e, j) => `<li class="${R.status[i][j] === 'ok' ? 'ok' : 'bad'}"><span class="num px">${e.L}</span><span class="tx">${esc(e.answer)}</span><span class="note">${richText(e.clue)}</span><span class="mark">${R.status[i][j] === 'ok' ? '✓' : R.status[i][j] === 'bad' ? '✗' : '—'}</span><button class="tog mini" data-act="flag-letter" data-val="${i}-${j}" ${flagged.has(`${s.seed}-r-${i}-${j}`) ? 'disabled' : ''} aria-label="Reportar la letra ${e.L}">${FLAG_SVG}</button></li>`).join('')}</ol></details>`).join('');
   return `<main class="enter"><div class="box" style="border-color:${color}">
     <p class="big px" style="color:${color}" data-tw="${esc(title)}">${esc(title)}</p>
+    ${n > 1 ? duelLines(s, w) : ''}
     ${n === 1 ? `<p class="px" style="font-size:clamp(28px,6vw,44px);margin:14px 0 4px">${s.scores[0]} / 27</p>` : ''}
     ${endExtras()}</div>
     <div class="box scroll"><table><thead><tr><th>Jugador</th><th>Aciertos</th><th>Errores</th><th>Sin responder</th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -960,7 +1141,7 @@ function roscoEnd() {
 
 function endExtras() {
   const s = state;
-  const rec = s.players.length === 1 ? (endInfo.newRecord ? `<span class="newrec px">¡Nuevo récord!</span>` : endInfo.prev !== null ? `<p class="hint">Tu récord sigue siendo ${fmtPts(endInfo.prev)}.</p>` : '') : '';
+  const rec = s.players.length === 1 ? (endInfo.newRecord ? `<span class="newrec px">¡Nuevo récord! ${esc(lineFor(WIN_LINES, s.seed))}</span>` : endInfo.prev !== null ? `<p class="hint">Su récord sigue siendo ${fmtPts(endInfo.prev)}.</p>` : '') : '';
   const xp = s.players.map((p, i) => endInfo.xp?.[i] ? `${esc(p.name)} +${fmtPts(endInfo.xp[i])} XP` : '').filter(Boolean).join(' · ');
   const up = (endInfo.rankUp || []).map(u => `<p class="rankup px">¡${esc(u.name)} sube a ${esc(u.rank)}!</p>`).join('');
   const md = (endInfo.medals || []).map(m => `<div class="newmedal"><span class="mico" style="--mc:${m.medal.color}">${pixSvg(m.medal.pix, m.medal.color)}</span><span><b class="px">¡${esc(m.medal.name)}!</b><span class="hint"> ${esc(m.name)} · ${esc(m.medal.how)}</span></span></div>`).join('');
@@ -973,7 +1154,7 @@ function pregunta(q, rev) {
     return `<button class="opt ${cls}" data-act="answer" data-val="${i}" data-num="1" data-k="${i + 1}" style="--i:${i}" ${rev ? 'disabled' : ''}>${optText(o)}</button>`;
   }).join('');
   return `${qHead(q)}<div class="menu">${opts}</div>
-  ${rev ? resultBox(state.result.correct ? '' : `Respuesta correcta: ${optText(q.options[q.answer])}`, q.exp) : ''}`;
+  ${rev ? resultBox(state.result.correct ? '' : `Era: ${optText(q.options[q.answer])}`, q.exp) : ''}`;
 }
 
 const qHead = (q, extra = '') => `<div class="box"><span class="hint px catl">${esc(q.cat)}${q.mode === 'preguntas' || q.mode === 'mezcla' ? ` · ${E.FORMATS[q.kind]}` : ''}</span><p class="q" style="margin-top:10px">${richText(q.q)}</p>${extra}</div>`;
@@ -997,7 +1178,7 @@ function ordenView(q, rev) {
   if (!rev) {
     const ord = draft.order;
     const items = q.items.map((it, i) => { const n = ord.indexOf(i); return `<button class="pick ${n >= 0 ? 'on' : ''}" data-act="ord" data-val="${i}" style="--i:${i}"><span class="num px">${n >= 0 ? n + 1 : ''}</span><span>${optText(it.text)}</span></button>`; }).join('');
-    return `${qHead(q, '<p class="hint" style="margin-top:8px">Toca los elementos en orden. Toca uno numerado para quitarlo.</p>')}
+    return `${qHead(q, '<p class="hint" style="margin-top:8px">Toque los elementos en orden. Toque uno numerado para quitarlo.</p>')}
     <div class="picks">${items}</div>
     <div class="row end"><button class="btn ghost" data-act="ord-reset" ${ord.length ? '' : 'disabled'}>Borrar</button><button class="btn" data-act="ord-ok" ${ord.length === q.items.length ? '' : 'disabled'}>Confirmar</button></div>`;
   }
@@ -1021,7 +1202,7 @@ function paresView(q, rev) {
       return `<button class="pick pr ${by >= 0 ? 'on' : ''}" data-act="pr" data-val="${j}" style="--pc:${by >= 0 ? PAIR_COLORS[by] : 'transparent'};--i:${j + q.left.length}"><span class="num px">${by >= 0 ? String.fromCharCode(65 + by) : ''}</span><span>${optText(t)}</span></button>`;
     }).join('');
     const done = q.left.every((_, i) => draft.links[i] != null);
-    return `${qHead(q, '<p class="hint" style="margin-top:8px">Toca uno de la izquierda y luego su pareja a la derecha.</p>')}
+    return `${qHead(q, '<p class="hint" style="margin-top:8px">Toque uno de la izquierda y luego su pareja a la derecha.</p>')}
     <div class="pairs"><div class="col">${L}</div><div class="col">${R}</div></div>
     <div class="row end"><button class="btn ghost" data-act="pr-reset" ${draft.links.some(x => x != null) ? '' : 'disabled'}>Borrar</button><button class="btn" data-act="pr-ok" ${done ? '' : 'disabled'}>Confirmar</button></div>`;
   }
@@ -1054,12 +1235,12 @@ const datalist = () => '';
 const acAttr = list => AC_LISTS.has(list) ? `data-ac="${list}"` : '';
 function escribirView(q, rev) {
   if (!rev) {
-    return `${qHead(q)}<div class="box field"><div class="row"><input class="input" id="typed" ${acAttr(q.list)} autocomplete="off" placeholder="Escribe tu respuesta" style="flex:1"><button class="btn" data-act="typed">Responder</button></div></div>${datalist(q.list)}`;
+    return `${qHead(q)}<div class="box field"><div class="row"><input class="input" id="typed" ${acAttr(q.list)} autocomplete="off" placeholder="Escriba su respuesta" style="flex:1"><button class="btn" data-act="typed">Responder</button></div></div>${datalist(q.list)}`;
   }
   const r = state.result;
   const shown = q.show.slice(0, 6).map(esc).join(', ') + (q.valid.length > 6 ? ` y ${q.valid.length - 6} más` : '');
   const given = typeof r.given === 'string' ? (r.typo ? juasTypo(E.keyLabel(ctx, q.list, r.key)) : `<p class="hint">Escribiste: ${esc(r.given)}${r.correct && r.key ? ` (${esc(E.keyLabel(ctx, q.list, r.key))})` : ''}</p>`) : '';
-  return `${qHead(q)}${resultBox(r.correct ? '' : `${q.valid.length > 1 ? 'Respuestas válidas' : 'Respuesta correcta'}: ${q.list === 'tipos' ? q.valid.map(k => badge(+k)).join(' ') : shown}`, q.exp, given)}`;
+  return `${qHead(q)}${resultBox(r.correct ? '' : `${q.valid.length > 1 ? 'Valían' : 'Era'}: ${q.list === 'tipos' ? q.valid.map(k => badge(+k)).join(' ') : shown}`, q.exp, given)}`;
 }
 
 const BOMB_SVG = '<svg class="bombico" viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true"><rect x="3" y="4" width="6" height="7" fill="currentColor"/><rect x="2" y="5" width="8" height="5" fill="currentColor"/><rect x="5" y="2" width="2" height="2" fill="currentColor"/><rect x="7" y="0" width="2" height="2" fill="#ffcb05"/><rect x="4" y="5" width="2" height="2" fill="#fff" opacity=".6"/></svg>';
@@ -1068,19 +1249,19 @@ function bombaView(q, rev) {
   const chips = b.given.map(g => `<span class="chip2" style="--c:${pColor(g.p)}">${esc(E.keyLabel(ctx, q.list, g.key))}</span>`).join('');
   if (!rev) {
     const last = !b.last ? '' : b.last.ok ? `<p class="flash ok keep">¡Vale! ${esc(E.keyLabel(ctx, q.list, b.last.key))}${b.last.typo ? ' <small>(¡JUAS! así se escribe)</small>' : ''}</p>` : `<p class="flash bad keep">${b.last.why === 'repetido' ? 'Ya lo dijeron' : 'No vale'}: ${esc(b.last.text)}</p>`;
-    const rules = n > 1 ? `Por turnos: ${E.BOMB_TURN} segundos cada uno. Si se te acaba el tiempo, ¡explota! Cada 3 respuestas tuyas valen 1 punto (máximo 3).`
-      : `Escribe todos los que puedas en ${E.BOMB_SOLO} segundos. ${surv ? 'Necesitas 3 para no perder una vida.' : 'Cada 3 valen 1 punto (máximo 3).'}`;
+    const rules = n > 1 ? `Por turnos: ${E.BOMB_TURN} segundos cada uno. Si se le acaba el tiempo, ¡se despicha! Cada 3 respuestas suyas valen 1 punto (máximo 3).`
+      : `Escriba todos los que pueda en ${E.BOMB_SOLO} segundos. ${surv ? 'Necesita 3 para no perder una vida.' : 'Cada 3 valen 1 punto (máximo 3).'}`;
     return `<div class="box bomb">
       <div class="row between"><span class="hint px catl">La bomba</span><span class="px count">${b.given.length}</span></div>
       <p class="q" style="margin-top:8px">${richText(q.q)}</p>
       <p class="hint">${rules}</p>
       <div class="fuse">${BOMB_SVG}<div class="hp"><i id="tbar" style="--w:100%"></i></div><span id="tleft" class="px"></span></div>
       ${n > 1 ? `<div><span class="turn px" style="--c:${pColor(b.turn)}">Turno de ${esc(state.players[b.turn].name)}</span></div>` : ''}
-      <div class="row"><input class="input" id="typed" ${acAttr(q.list)} autocomplete="off" placeholder="Escribe y pulsa Enter" style="flex:1"><button class="btn" data-act="bomb-send">Enviar</button></div>
+      <div class="row"><input class="input" id="typed" ${acAttr(q.list)} autocomplete="off" placeholder="Escriba y presione Enter" style="flex:1"><button class="btn" data-act="bomb-send">Enviar</button></div>
       ${last}<div class="chips">${chips}</div></div>${datalist(q.list)}`;
   }
   const res = state.result.bomb;
-  const title = res.loser !== null ? `¡BOOM! A ${state.players[res.loser].name} le explotó.` : '¡Tiempo!';
+  const title = res.loser !== null ? `¡Se despichó tere! A ${state.players[res.loser].name} le explotó.` : '¡Se despichó tere!';
   const missing = q.valid.filter(k => !b.given.some(g => g.key === k)).slice(0, 8).map(k => esc(E.keyLabel(ctx, q.list, k)));
   const table = `<table><thead><tr><th>Jugador</th><th>Respuestas</th><th>Puntos</th></tr></thead><tbody>${state.players.map((p, i) => `<tr><td><span style="color:${pColor(i)}">●</span> ${esc(p.name)}${res.loser === i ? ' 💥' : ''}</td><td>${b.counts[i]}</td><td class="px" style="font-size:12px">+${fmtPts(res.points[i])}</td></tr>`).join('')}</tbody></table>`;
   return `<div class="box bomb"><p class="verdict px bad boom" data-tw="${esc(title)}">${esc(title)}</p><p class="q">${richText(q.q)}</p>
@@ -1105,18 +1286,25 @@ function questionView() {
   ${body}</main>`;
 }
 
+// Frase del ganador y burla para cada uno de los que perdieron.
+function duelLines(s, w) {
+  if (w.length !== 1) return '';
+  const lose = s.players.filter(p => p.id !== w[0].id);
+  return `<p class="winline px">${esc(lineFor(WIN_LINES, s.seed))}</p>${lose.map((p, k) => `<p class="loseline"><span style="color:${pColor(p.id)}">${esc(p.name)}:</span> <b>${esc(lineFor(LOSE_LINES, s.seed, k + 1))}</b></p>`).join('')}`;
+}
 function endView() {
   const s = state, c = s.config;
   const total = s.log.length, right = s.log.filter(l => l.correct).length;
-  let title, color = 'var(--ink)', sub;
+  let title, color = 'var(--ink)', sub, taunt = '';
   if (s.players.length > 1) {
     const w = E.winners(s);
-    title = w.length === 1 ? `¡JUAS! ${w[0].name} gana` : '¡Empate!';
+    title = w.length === 1 ? `¡${w[0].name} se la jugó!` : TIE_LINE;
     if (w.length === 1) color = pColor(w[0].id);
+    taunt = duelLines(s, w);
     sub = `${right} de ${total} respuestas correctas entre todos.`;
   } else if (c.type === 'supervivencia') {
-    title = '¡Fin del camino!';
-    sub = `Sumaste ${fmtPts(s.scores[0])} ${s.scores[0] === 1 ? 'punto' : 'puntos'} antes de quedarte sin vidas. Tu mejor racha fue de ${s.bestStreak}.`;
+    title = lineFor(LOSE_LINES, s.seed);
+    sub = `Sumó ${fmtPts(s.scores[0])} ${s.scores[0] === 1 ? 'punto' : 'puntos'} antes de quedarse sin vidas. Su mejor racha fue de ${s.bestStreak}.`;
   } else if (c.type === 'contrarreloj') {
     title = '¡Tiempo!';
     sub = `${fmtPts(s.scores[0])} ${s.scores[0] === 1 ? 'punto' : 'puntos'} en ${plural(total, 'respuesta', 'respuestas')} y ${c.duration} segundos.`;
@@ -1136,6 +1324,7 @@ function endView() {
   return `<main class="enter">
   <div class="box" style="border-color:${color}">
     <p class="big px" style="color:${color}" data-tw="${esc(title)}">${esc(title)}</p>
+    ${taunt}
     ${s.players.length === 1 ? `<p class="px" style="font-size:clamp(28px,6vw,44px);margin:14px 0 4px">${fmtPts(s.scores[0])}</p>` : ''}
     <p class="hint" style="margin-top:10px">${sub}</p>
     ${endExtras()}
@@ -1149,19 +1338,19 @@ function renderOverlay() {
   if (!overlay) { $ov.innerHTML = ''; return; }
   let inner = '';
   if (overlay === 'pause') {
-    inner = `<h2 class="px">Pausa</h2><div class="dlist">
+    inner = `<h2 class="px">Un toque…</h2><div class="dlist">
       <button class="ditem" data-act="resume" id="first">Continuar</button>
       <button class="ditem" data-act="settings">Ajustes</button>
       <button class="ditem danger" data-act="ask-home">Volver al inicio</button></div>`;
   } else if (overlay === 'settings') {
     const c = state.config, ta = c.type === 'contrarreloj' || c.type === 'rosco';
     if (c.type === 'rosco' || c.daily) inner = `<h2 class="px">Ajustes</h2><div class="field"><span class="l px">Sonido</span><div class="togs">${tog('mute', 'on', !Sound.muted, 'Con sonido')}${tog('mute', 'off', Sound.muted, 'Sin sonido')}</div>
-      <p class="hint">${c.daily ? 'El reto del día es igual para todos, así que sus ajustes no se pueden cambiar.' : 'Los jugadores y el tiempo del rosco no se pueden cambiar a media partida. Tu reloj está detenido mientras esta ventana está abierta.'}</p>
+      <p class="hint">${c.daily ? 'El reto del día es igual para todos, así que sus ajustes no se pueden cambiar.' : 'Los jugadores y el tiempo del rosco no se pueden cambiar a media partida. Su reloj está detenido mientras esta ventana está abierta.'}</p>
       <div class="row between"><button class="btn ghost" data-act="pause">◀ Volver</button><button class="btn ghost" data-act="ask-restart">Empezar de nuevo</button></div></div>`;
     else inner = `<h2 class="px">Ajustes</h2><div class="field">
       ${ta ? '' : `<span class="l px">Tiempo por pregunta</span><div class="togs">${[[0, 'Sin tiempo'], [20, '20 s'], [40, '40 s']].map(([v, l]) => tog('live-timer', v, c.timer === v, l)).join('')}</div>
       <span class="l px">Pokeidioma</span><div class="togs">${tog('live-idioma', 'opciones', c.idiomaMode === 'opciones', '4 opciones')}${tog('live-idioma', 'escribir', c.idiomaMode === 'escribir', 'Escribir')}</div>`}
-      <span class="l px">Generaciones</span><div class="togs">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(g => tog('live-gen', g, c.gens.includes(g), g)).join('')}</div>
+      <span class="l px">Regiones de los Pokémon</span><div class="togs regions">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(g => tog('live-gen', g, c.gens.includes(g), `${REGIONS[g]} <small>${g}</small>`)).join('')}</div>
       ${c.type !== 'rosco' && E.isMixed(state) ? `<span class="l px">Formatos</span><div class="togs">${Object.entries(E.FORMATS).filter(([k]) => !(ta && ['bomba', 'pokedle'].includes(k))).map(([k, n]) => tog('live-fmt', k, (c.formats || []).includes(k), n)).join('')}</div>` : ''}
       ${c.type !== 'rosco' ? `<span class="l px">Temas de las preguntas</span><div class="togs">${Object.entries(E.CATS).map(([k, n]) => tog('live-cat', k, (c.cats || []).includes(k), n)).join('')}</div>` : ''}
       <span class="l px">Sonido</span><div class="togs">${tog('mute', 'on', !Sound.muted, 'Con sonido')}${tog('mute', 'off', Sound.muted, 'Sin sonido')}</div>
@@ -1174,7 +1363,7 @@ function renderOverlay() {
       <label class="field" style="margin-top:12px"><span class="hint">Nota (opcional)</span><textarea class="input" id="flag-note" rows="3" maxlength="500" placeholder="¿Qué está mal? ¿Cuál sería lo correcto?">${esc(flagCtx.note || '')}</textarea></label>
       <div class="row between" style="margin-top:12px"><button class="btn ghost" data-act="flag-cancel">Cancelar</button><button class="btn" data-act="flag-send" ${flagCtx.reason == null ? 'disabled' : ''}>Enviar reporte</button></div>`;
   } else if (overlay.startsWith('confirm')) {
-    const msg = overlay === 'confirm-reset' ? '¿Seguro que quieres borrar todos los récords? No se pueden recuperar.' : overlay === 'confirm-restart' ? '¿Empezar de nuevo con otros ajustes? Se perderá el progreso de esta partida.' : '¿Seguro que quieres volver al inicio? Se perderá el progreso de esta partida.';
+    const msg = overlay === 'confirm-reset' ? '¿Seguro que quiere borrar todos los récords? No se pueden recuperar.' : overlay === 'confirm-restart' ? '¿Empezar de nuevo con otros ajustes? Se va a perder el progreso de esta partida.' : '¿Seguro que quiere volver al inicio? Se va a perder el progreso de esta partida.';
     inner = `<p class="q" data-tw="${esc(msg)}">${esc(msg)}</p><div class="dlist">
       <button class="ditem danger" data-act="confirm-yes">Sí</button>
       <button class="ditem" data-act="confirm-no" id="first">No</button></div>`;
@@ -1243,8 +1432,9 @@ function syncClock() {
   tick();
 }
 function tick() {
-  if (clock.paused || !state) return;
+  if (clock.paused || !state) { setHurry(false); return; }
   const now = Date.now();
+  let hurry = false;
   if (clock.qEnd) {
     const left = Math.max(0, clock.qEnd - now), pct = left / (clock.qDur || 1) * 100;
     const bar = document.getElementById('tbar'), txt = document.getElementById('tleft');
@@ -1252,6 +1442,7 @@ function tick() {
     const sec = Math.ceil(left / 1000);
     if (txt) txt.textContent = sec;
     if (sec <= 5 && sec > 0 && sec !== clock.lastSec) Sound.play('tick');
+    if (sec <= 5 && sec > 0) hurry = true;
     clock.lastSec = sec;
     if (left <= 0) {
       clock.qEnd = 0;
@@ -1269,6 +1460,7 @@ function tick() {
     if (txt) txt.textContent = fmtClock(left);
     const sec = Math.ceil(left / 1000);
     if (sec <= 5 && sec > 0 && sec !== clock.lastTSec) Sound.play('tick');
+    if (sec <= 5 && sec > 0) hurry = true;
     clock.lastTSec = sec;
     if (left <= 0) { clock.tEnd = 0; clearTimeout(autoNext); dispatch({ type: 'TIME_UP' }); }
   }
@@ -1280,9 +1472,11 @@ function tick() {
     const t2 = document.getElementById('rtext2'); if (t2) t2.textContent = fmtClock(left);
     const sec = Math.ceil(left / 1000);
     if (sec <= 5 && sec > 0 && sec !== clock.lastRSec) Sound.play('tick');
+    if (sec <= 5 && sec > 0) hurry = true;
     clock.lastRSec = sec;
     if (left <= 0) { clock.rStart = 0; dispatch({ type: 'ROSCO_TIME', player: state.rosco.turn }); }
   }
+  setHurry(hurry);
 }
 
 // Conecta el deslizador y el número de la Estimación.
@@ -1361,6 +1555,17 @@ function countUp() {
 }
 
 // ---------- dibujar ----------
+const SCENIC = new Set(['menu', 'welcome', 'profile', 'solo', 'roscoSetup', 'custom', 'records', 'reports', 'daily']);
+const $bg = document.getElementById('bg');
+// «¡Pellízquese!»: aparece en los últimos 5 segundos de cualquier reloj.
+let hurryOn = false;
+function setHurry(on) {
+  if (on === hurryOn) return;
+  hurryOn = on;
+  let el = document.getElementById('hurry');
+  if (!el) { el = document.createElement('div'); el.id = 'hurry'; el.className = 'hurry px'; el.textContent = '¡Pellízquese!'; el.setAttribute('aria-live', 'polite'); document.body.appendChild(el); }
+  el.classList.toggle('on', on);
+}
 function render() {
   const sk = view + '|' + (view === 'game' && state ? `${state.phase}|${state.ri}|${state.qi}${state.phase === 'rosco' ? `|${state.rosco.turn}|${state.rosco.ready}` : ''}` : '');
   const qk = view === 'game' && state ? `${state.ri}|${state.qi}` : '';
@@ -1381,6 +1586,11 @@ function render() {
     const p = state.phase;
     html = hudView() + (p === 'intro' || p === 'roundEnd' ? introView() : p === 'rosco' ? roscoView() : p === 'end' ? (state.rosco ? roscoEnd() : endView()) : questionView());
   }
+  // El paisaje queda fijo detrás en el menú y las pantallas de ajustes: solo se mueve el contenido.
+  const scenic = SCENIC.has(view);
+  if (scenic && !$bg.firstChild) $bg.innerHTML = scene();
+  document.body.classList.toggle('scenic', scenic);
+  if (view !== 'game') setHurry(false);
   $app.innerHTML = html;
   $app.classList.toggle('still', !F.newScreen);
   flash = '';
@@ -1488,21 +1698,25 @@ document.addEventListener('click', e => {
     case 'soloType': cfg.solo.type = v; break;
     case 'addplayer': cfg.players = cfg.players.concat(`Jugador ${cfg.players.length + 1}`); break;
     case 'delplayer': cfg.players = cfg.players.filter((_, i) => i !== +v); break;
-    case 'round': cfg.rounds = toggle(cfg.rounds, v); break;
+    case 'round': { const r = toggle(cfg.rounds, v); cfg.rounds = r.length ? r : cfg.rounds; break; }
     case 'per': cfg.perPlayer = +v; break;
     case 'soloPer': cfg.solo.perRound = +v; break;
     case 'soloDur': cfg.solo.duration = +v; break;
     case 'cat': { const c = toggle(cfg.cats, v); cfg.cats = c.length ? c : cfg.cats; break; }
     case 'cats': cfg.cats = Object.keys(E.CATS); break;
     case 'gen': { const g = toggle(cfg.gens, +v).sort((a, c) => a - c); cfg.gens = g.length ? g : cfg.gens; break; }
-    case 'gens': cfg.gens = v === 'all' ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : [1, 2, 3]; break;
+    case 'gens': cfg.gens = (GEN_PRESETS.find(g => g[0] === v) || GEN_PRESETS[0])[2].slice(); break;
+    case 'fmtPreset': { const p = FMT_PRESETS.find(f => f[0] === v); if (p) { cfg.formats = p[2].slice(); if (v === 'escribir') cfg.idiomaMode = 'escribir'; } break; }
+    case 'catPreset': { const p = CAT_PRESETS.find(c => c[0] === v); if (p) cfg.cats = p[2].slice(); break; }
+    case 'panel': openPanel[v] = !openPanel[v]; break;
+    case 'online': toast('Las mejengas en línea vienen en la próxima actualización.'); return;
     case 'idioma': cfg.idiomaMode = v; break;
     case 'timer': cfg.timer = +v; break;
     case 'startSolo': saveCfg(); startGame({ ...shared(), type: cfg.solo.type, perPlayer: cfg.solo.perRound, duration: cfg.solo.duration, players: [myName()] }); return;
     case 'startMulti': saveCfg(); startGame({ ...shared(), type: 'clasica', players: cfg.players.map((n, i) => n.trim() || `Jugador ${i + 1}`) }); return;
     case 'soloCfg': goto('solo'); return;
     case 'roscoSetup': goto('roscoSetup'); return;
-    case 'startRosco': saveCfg(); startGame({ type: 'rosco', players: cfg.rosco.players.map((n, i) => n.trim() || `Jugador ${i + 1}`), roscoTime: cfg.rosco.time, gens: cfg.gens.slice() }); return;
+    case 'startRosco': saveCfg(); startGame({ type: 'rosco', players: [myName()], roscoTime: cfg.rosco.time, gens: cfg.gens.slice() }); return;
     case 'radd': cfg.rosco.players = cfg.rosco.players.concat(`Jugador ${cfg.rosco.players.length + 1}`); break;
     case 'rdel': cfg.rosco.players = cfg.rosco.players.filter((_, i) => i !== +v); break;
     case 'rtime': cfg.rosco.time = +v; break;
@@ -1567,14 +1781,14 @@ document.addEventListener('click', e => {
     }
     case 'flag-reason': flagCtx.reason = +v; flagCtx.noteFocus = false; renderOverlay(); return;
     case 'flag-cancel': closeOverlay(); return;
-    case 'flag-send': saveReport(FLAG_REASONS[flagCtx.reason], flagCtx.note || ''); closeOverlay(); render(); toast(dbRef ? '¡Reporte enviado!' : 'Reporte guardado en este dispositivo'); return;
+    case 'flag-send': saveReport(FLAG_REASONS[flagCtx.reason], flagCtx.note || ''); closeOverlay(); render(); toast(dbRef ? '¡Reporte enviado!' : 'Reporte guardado en este celular'); grantMedal('reportero'); return;
     case 'reports': goto('reports'); loadRemote(); return;
     case 'install': if (installEvt) { installEvt.prompt(); installEvt.userChoice.finally(() => { installEvt = null; render(); }); } return;
     case 'copy-reports': {
       const mine = new Set(reports.map(r => r.id));
       const all = reports.map(r => r.data).concat((remoteReports || []).filter(r => !mine.has(r.id)).map(r => r.data));
       const text = 'Reportes de JUASmon:\n' + JSON.stringify(all.map(d => ({ ...d, q: undefined, pregunta: d.q })), null, 1);
-      (navigator.clipboard?.writeText(text) ?? Promise.reject()).then(() => toast('Copiado. Pégalo en el chat con Claude.'), () => toast('No se pudo copiar'));
+      (navigator.clipboard?.writeText(text) ?? Promise.reject()).then(() => toast('Copiado. Péguelo en el chat con Claude.'), () => toast('No se pudo copiar'));
       return;
     }
     case 'del-report': {
@@ -1613,13 +1827,13 @@ document.addEventListener('click', e => {
       const q = { cat: g('c-cat') || 'Entre nosotros', q: g('c-q'), a: g('c-a'), wrong: [g('c-w1'), g('c-w2'), g('c-w3')], exp: '' };
       if (!q.q || !q.a || q.wrong.some(w => !w)) { flash = 'Faltan campos: la pregunta, la correcta y las tres incorrectas.'; render(); return; }
       if (new Set([q.a, ...q.wrong].map(E.normalize)).size < 4) { flash = 'Las cuatro respuestas tienen que ser distintas.'; render(); return; }
-      custom = custom.concat(q); store.save('pt-custom', custom); flash = 'Pregunta agregada.'; render(); return;
+      custom = custom.concat(q); store.save('pt-custom', custom); flash = 'Pregunta agregada.'; render(); if (custom.length >= 10) grantMedal('autor'); return;
     }
     case 'delq': custom = custom.filter((_, i) => i !== +v); store.save('pt-custom', custom); render(); return;
     case 'copyq': {
       const text = JSON.stringify(custom);
       const io = document.getElementById('c-io'); io.value = text; io.select();
-      navigator.clipboard?.writeText(text).then(() => { flash = 'Copiadas. Mándaselas a tu amigo.'; render(); }).catch(() => { /* el texto queda seleccionado */ });
+      navigator.clipboard?.writeText(text).then(() => { flash = 'Copiadas. Mándeselas a su compa.'; render(); }).catch(() => { /* el texto queda seleccionado */ });
       return;
     }
     case 'importq': {
