@@ -24,6 +24,15 @@ service cloud.firestore {
         && (!('icon' in request.resource.data) || (request.resource.data.icon is string && request.resource.data.icon.size() <= 12));
     }
 
+    // Salas de duelos en línea: los dos jugadores leen y escriben su sala.
+    match /salas/{code} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.host == request.auth.uid
+        && code.matches('^[A-Z0-9]{4}$');
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null && resource.data.host == request.auth.uid;
+    }
+
     // Todo lo demás, cerrado.
     match /{document=**} {
       allow read, write: if false;

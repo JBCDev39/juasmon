@@ -8,6 +8,7 @@ import * as E from './engine.js';
 import { connectCloud } from './nube.js';
 import { createMinis } from './minis.js';
 import { createCasino } from './casino.js';
+import { createOnline } from './online.js';
 
 {
 const $app = document.getElementById('app');
@@ -39,7 +40,7 @@ const RANKS = [[0, 'Novato'], [25, 'Entrenador'], [75, 'Líder de gimnasio'], [1
 const rankOf = xp => { let r = RANKS[0]; for (const x of RANKS) if (xp >= x[0]) r = x; const i = RANKS.indexOf(r); return { name: r[1], next: RANKS[i + 1] || null, i }; };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
-const APP_VERSION = 10;
+const APP_VERSION = 11;
 const FLAG_REASONS = ['La respuesta está mal', 'La pregunta no tiene sentido o es confusa', 'Un nombre o dato está mal escrito', 'Es demasiado fácil o difícil', 'Otro'];
 const FLAG_SVG = '<svg class="flagico" viewBox="0 0 10 12" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="0" width="1" height="12" fill="currentColor"/><rect x="2" y="1" width="6" height="1" fill="var(--red)"/><rect x="2" y="2" width="7" height="3" fill="var(--red)"/><rect x="2" y="5" width="5" height="1" fill="var(--red)"/></svg>';
 const store = {
@@ -143,10 +144,10 @@ const MEDAL_DEFS = [
   ['juas', '¡JUAS!', 'Acierte 10 veces con un error de tipeo.', 'Chistosas', 'juas', '#e3350d'],
   ['autor', 'Autor', 'Cree 10 preguntas propias.', 'Chistosas', 'pluma', '#c98a00'],
   ['reportero', 'Ojo crítico', 'Reporte una pregunta que esté mala.', 'Chistosas', 'lupa', '#56615b'],
-  ['mejenga1', 'Primer duelo', 'Gane su primer duelo en línea.', 'En línea', 'espadas', '#2f6fdb', null, true],
-  ['paliza', 'Paliza', 'Gane un duelo en línea por 5 puntos o más.', 'En línea', 'estallido', '#e3350d', null, true],
-  ['remontada', 'Remontada', 'Gane un duelo en línea después de ir perdiendo por 3.', 'En línea', 'flecha', '#2e9e4f', null, true],
-  ['rival10', 'Rival eterno', 'Gánele 10 duelos en línea al mismo rival.', 'En línea', 'rival', '#8a4fd8', null, true],
+  ['mejenga1', 'Primer duelo', 'Gane su primer duelo en línea.', 'En línea', 'espadas', '#2f6fdb'],
+  ['paliza', 'Paliza', 'Gane un duelo en línea por 5 puntos o más.', 'En línea', 'estallido', '#e3350d'],
+  ['remontada', 'Remontada', 'Gane un duelo en línea después de ir perdiendo por 3.', 'En línea', 'flecha', '#2e9e4f'],
+  ['rival10', 'Rival eterno', 'Gánele 10 duelos en línea al mismo rival.', 'En línea', 'rival', '#8a4fd8'],
 ];
 const MEDALS = MEDAL_DEFS.map(([id, name, how, cat, g, color, tier = null, soon = false]) => ({
   id, how, cat, soon, pix: MEDAL_GLYPH[g],
@@ -252,6 +253,7 @@ function saveProfile() {
   Sound.play(first ? 'start' : 'select');
   goto('menu');
   if (first) toast(`¡Bienvenido, ${name}!`);
+  if (first && linkSala) ONLINE.openLink(linkSala);
 }
 function profileView() {
   const d = profDraft, first = d.first;
@@ -358,6 +360,8 @@ let reports = store.load('pt-reports', []), flagged = new Set(reports.map(r => r
 (async () => {
   try { ({ db: dbRef, userId } = await connectCloud()); } catch { dbRef = null; userId = null; }
   if (dbRef) { syncReports(); if (view === 'daily') loadDailyBoard(); if (view === 'reports') loadRemote(); }
+  try { ONLINE.cloudReady(); } catch { }
+  if (view === 'online') render();
 })();
 
 // App instalable: el botón «Instalar» aparece cuando el navegador lo permite.
@@ -456,6 +460,7 @@ const soundBtn = () => `<button class="ibtn" data-act="mute" aria-label="${Sound
 const plural = (n, a, b) => `${n} ${n === 1 ? a : b}`;
 
 function dispatch(action) {
+  if (state?.online) { ONLINE.action(action); return; }
   const prev = state;
   state = E.reduce(state, action, ctx);
   if (state === prev) return;
@@ -500,7 +505,7 @@ function scheduleAuto() {
 }
 
 function persist() {
-  if (view !== 'game' || !state || state.config.type === 'contrarreloj') return;
+  if (view !== 'game' || !state || state.online || state.config.type === 'contrarreloj') return;
   if (state.phase === 'rosco') { store.save('pt-save', { state, at: Date.now() }); return; }
   if (state.phase === 'end') store.del('pt-save');
   else store.save('pt-save', { state, at: Date.now() });
@@ -513,7 +518,7 @@ function recordEnd() {
   endInfo = { newRecord: false, prev: null, xp: [], rankUp: [] };
   // Experiencia: cada punto ganado suma, para todos los jugadores con nombre.
   state.players.forEach((p, i) => {
-    const k = p.name.trim(); if (!k) return;
+    const k = p.name.trim(); if (!k || (state.online && i !== state.online.me)) return;
     const before = records.xp[k] || 0, gained = Math.round(state.scores[i] * 2) / 2;
     records.xp[k] = before + gained;
     endInfo.xp[i] = gained;
@@ -529,6 +534,11 @@ function recordEnd() {
     endInfo.prev = old ? old.best : null;
     if (!old || score > old.best) { endInfo.newRecord = score > 0; records.solo[key] = { label, best: score, streak: Math.max(state.bestStreak, old?.streak || 0), at: Date.now() }; }
     else records.solo[key] = { ...old, streak: Math.max(state.bestStreak, old.streak || 0) };
+  } else if (state.online) {
+    const w = E.winners(state), me = state.online.me, rv = ONLINE.rivalName().trim();
+    endInfo.online = { won: w.length === 1 && w[0].id === me, margin: state.scores[me] - state.scores[1 - me], deficit: ONLINE.maxDeficit() };
+    if (endInfo.online.won) { const k = state.players[me].name.trim(); records.duels[k] = (records.duels[k] || 0) + 1; records.rivals ||= {}; records.rivals[rv] = (records.rivals[rv] || 0) + 1; }
+    records.games = (records.games || 0) + 1;
   } else if (state.players.length > 1) {
     const w = E.winners(state);
     if (w.length === 1) { const k = w[0].name.trim(); records.duels[k] = (records.duels[k] || 0) + 1; }
@@ -541,7 +551,7 @@ function recordEnd() {
   endInfo.medals = [];
   const doneDaily = Object.keys(daily).length, dstreak = dailyStreak();
   state.players.forEach((p, i) => {
-    const k = p.name.trim(); if (!k) return;
+    const k = p.name.trim(); if (!k || (state.online && i !== state.online.me)) return;
     const have = new Set(records.medals[k] || []), sc = state.scores[i];
     const st = records.stats[k] ||= { games: 0, correct: 0, typos: 0, idioma: 0, fmts: [], gens: [] };
     const logs = state.log.filter(l => l.player === i);
@@ -572,6 +582,12 @@ function recordEnd() {
     if (logs.some(l => l.kind === 'quien' && l.correct && l.hints === 0)) earn('alchile');
     if (logs.some(l => l.kind === 'estimacion' && l.near)) earn('halcon');
     if (worst >= 5) earn('salado');
+    if (state.online && endInfo.online?.won) {
+      earn('mejenga1');
+      if (endInfo.online.margin >= 5) earn('paliza');
+      if (endInfo.online.deficit >= 3) earn('remontada');
+      if ((records.rivals?.[ONLINE.rivalName().trim()] || 0) >= 10) earn('rival10');
+    }
     if (st.typos >= 10) earn('juas');
     if (st.idioma >= 25) earn('poliglota');
     if (Object.keys(E.FORMATS).every(f => st.fmts.includes(f))) earn('todoterreno');
@@ -582,9 +598,10 @@ function recordEnd() {
     records.medals[k] = [...have];
   });
   // Fichas para el casino: 1 por acierto, más un extra por récord o reto completado.
-  if (state.players.length === 1) {
-    const right = c.type === 'rosco' ? state.scores[0] : state.log.filter(l => l.player === 0 && l.correct).length;
-    endInfo.fichas = addFichas(right + (endInfo.newRecord ? 5 : 0) + (c.daily ? 5 : 0));
+  if (state.players.length === 1 || state.online) {
+    const me = state.online ? state.online.me : 0;
+    const right = c.type === 'rosco' ? state.scores[0] : state.log.filter(l => l.player === me && l.correct).length;
+    endInfo.fichas = addFichas(right + (endInfo.newRecord ? 5 : 0) + (c.daily ? 5 : 0) + (endInfo.online?.won ? 5 : 0));
   }
   store.save('pt-records', records);
 }
@@ -656,7 +673,7 @@ function medalsHtml(name) {
   const have = new Set(records.medals?.[name] || []);
   return MEDAL_CATS.map(cat => {
     const list = MEDALS.filter(m => m.cat === cat), n = list.filter(m => have.has(m.id)).length;
-    return `<div class="mcat"><span class="l px">${cat}${cat === 'En línea' ? ' · próximamente' : ` · ${n} de ${list.length}`}</span><div class="medals">${list.map(m => {
+    return `<div class="mcat"><span class="l px">${cat} · ${n} de ${list.length}</span><div class="medals">${list.map(m => {
       const on = have.has(m.id);
       return `<div class="medal ${on ? 'on' : ''} ${m.soon ? 'soon' : ''}" title="${esc(m.how)}"><span class="mico" style="--mc:${m.color}">${pixSvg(m.pix, on ? m.color : 'currentColor')}</span><b>${m.name}</b><span class="hint">${m.how}</span></div>`;
     }).join('')}</div></div>`;
@@ -721,7 +738,7 @@ function menuView() {
   </div>`;
 }
 
-const BACK_NAMES = { menu: 'Menú', hoy: 'Hoy', modos: 'Más modos', casino: 'Casino' };
+const BACK_NAMES = { menu: 'Menú', hoy: 'Hoy', modos: 'Más modos', casino: 'Casino', online: 'En línea' };
 // Lo diario en un solo lugar: reto, Pokédle y raspadita.
 function pendingToday() {
   try { return (daily[crDate()] ? 0 : 1) + (MINI.pokedleDone() ? 0 : 1) + (CAS.scratchDone() ? 0 : 1); } catch { return 0; }
@@ -856,7 +873,7 @@ function soloView() {
   };
   const g = E.GAME_TYPES[t];
   return `${screenHead('1 jugador')}<main class="${F.newScreen ? 'enter' : ''} solo">
-    <div class="segs" role="group" aria-label="Modo de juego">${['clasica', 'supervivencia', 'contrarreloj'].map(k => `<button class="seg" data-act="soloType" data-val="${k}" aria-pressed="${t === k}">${pixSvg(AV_ICONS[SOLO_ICON[k]] || PIX[SOLO_ICON[k]], 'currentColor')}<span class="px">${E.GAME_TYPES[k].name}</span></button>`).join('')}</div>
+    <div class="segs" role="group" aria-label="Modo de juego">${['clasica', 'supervivencia', 'contrarreloj'].map(k => `<button class="seg" data-act="soloType" data-val="${k}" aria-pressed="${t === k}">${pixSvg(AV_ICONS[SOLO_ICON[k]] || PIX[SOLO_ICON[k]], 'currentColor')}<span class="seglbl">${E.GAME_TYPES[k].name}</span></button>`).join('')}</div>
     <div class="box modeinfo"><p class="q">${g.blurb}</p><p class="hint">${recFor(t)}</p></div>
     <button class="summary" data-act="panel" data-val="solo" aria-expanded="${!!openPanel.solo}"><span class="px">Ajustes</span><span class="sumtxt">${esc(soloSummary(t))}</span><span class="chev" aria-hidden="true">${openPanel.solo ? '▾' : '▸'}</span></button>
     ${openPanel.solo ? `<div class="setup">${commonSettings(t, true)}</div>` : ''}
@@ -957,7 +974,7 @@ function hudView() {
     }
     const mine = s.log.filter(l => l.player === i), ok = mine.filter(l => l.correct).length + mine.filter(l => l.points > 0 && !l.correct).length * 0.5;
     const pct = mine.length ? ok / mine.length * 100 : 0;
-    const on = active && n > 1 && E.currentPlayer(s) === i;
+    const on = active && n > 1 && !s.online && E.currentPlayer(s) === i;
     const shown = last.scores[i] ?? s.scores[i];
     return `<div class="panel ${on ? 'on' : ''}" style="--c:${pColor(i)}"><div class="pn"><i></i><span>${esc(p.name)}</span><em>▶ Turno</em></div>
       <div class="ps"><span class="pts keep" data-score="${i}">${fmtPts(shown)}</span><span class="pa">${fmtPts(ok)}/${mine.length} aciertos</span></div>
@@ -1079,6 +1096,7 @@ function nextButton() {
     const nextP = s.players[(s.qi + 1) % s.players.length];
     label = lastQ ? (lastR ? 'Ver resultados' : 'Fin de la ronda') : s.players.length > 1 ? `Turno de ${esc(nextP.name)} ▶` : 'Siguiente ▶';
   }
+  if (s.online) label = ONLINE.nextLabel();
   const fk = `${s.seed}-${s.ri}-${s.qi}`, done = flagged.has(fk);
   return `<div class="row between"><button class="btn ghost flag" data-act="flag" ${done ? 'disabled' : ''}>${FLAG_SVG}<span>${done ? 'Reportada' : 'Reportar'}</span></button><button class="btn" data-act="next" id="nextbtn">${label}</button></div>`;
 }
@@ -1383,7 +1401,7 @@ function questionView() {
   const right = s.config.type === 'clasica' ? `Pregunta ${s.qi + 1} de ${E.questionsPerRound(s)}` : `Pregunta ${s.qi + 1}`;
   return `<main class="${F.newQ ? 'enter' : ''}">
   <div class="meta px"><span>${left}</span><span>${right}</span></div>
-  ${s.players.length > 1 && !['bomba', 'pokedle'].includes(q.kind) && !q.est ? `<div class="row"><span class="turn px" style="--c:${pColor(pi)}">Turno de ${esc(s.players[pi].name)}</span></div>` : ''}
+  ${s.players.length > 1 && !s.online && !['bomba', 'pokedle'].includes(q.kind) && !q.est ? `<div class="row"><span class="turn px" style="--c:${pColor(pi)}">Turno de ${esc(s.players[pi].name)}</span></div>` : ''}
   ${q.kind !== 'bomba' ? timerBar() : ''}
   ${body}</main>`;
 }
@@ -1432,14 +1450,19 @@ function endView() {
     ${endExtras()}
   </div>
   ${s.players.length > 1 ? `<div class="box scroll">${standingsTable()}</div>` : ''}
-  <div class="row end"><button class="btn ghost" data-act="menu">Menú</button><button class="btn ghost" data-act="${again}">Cambiar ajustes</button><button class="btn" data-act="rematch" id="nextbtn">${s.players.length > 1 ? 'Revancha' : 'Otra vez'}</button></div></main>`;
+  ${s.online ? '<div class="row end"><button class="btn ghost" data-act="on-leave">Salir</button><button class="btn ghost" data-act="on-lobby">Cambiar ajustes</button><button class="btn" data-act="on-rematch" id="nextbtn">Revancha</button></div></main>'
+    : `<div class="row end"><button class="btn ghost" data-act="menu">Menú</button><button class="btn ghost" data-act="${again}">Cambiar ajustes</button><button class="btn" data-act="rematch" id="nextbtn">${s.players.length > 1 ? 'Revancha' : 'Otra vez'}</button></div></main>`}`;
 }
 
 // ---------- ventanas: pausa, ajustes y confirmación ----------
 function renderOverlay() {
   if (!overlay) { $ov.innerHTML = ''; return; }
   let inner = '';
-  if (overlay === 'pause') {
+  if (overlay === 'pause' && state?.online) {
+    inner = `<h2 class="px">Un toque…</h2><p class="hint">En línea el reloj sigue corriendo.</p><div class="dlist">
+      <button class="ditem" data-act="resume" id="first">Seguir jugando</button>
+      <button class="ditem danger" data-act="on-quit">Salir del duelo</button></div>`;
+  } else if (overlay === 'pause') {
     inner = `<h2 class="px">Un toque…</h2><div class="dlist">
       <button class="ditem" data-act="resume" id="first">Continuar</button>
       <button class="ditem" data-act="settings">Ajustes</button>
@@ -1657,7 +1680,10 @@ function countUp() {
 }
 
 // ---------- dibujar ----------
-const SCENIC = new Set(['menu', 'welcome', 'profile', 'solo', 'roscoSetup', 'custom', 'records', 'reports', 'daily', 'hoy', 'modos', 'pokedleDia', 'tipos', 'cadena', 'ahorcado', 'casino', 'c21', 'alta', 'doble', 'rasca']);
+// Enlace de invitación: jbcdev39.github.io/juasmon/?sala=CÓDIGO
+const linkSala = new URLSearchParams(location.search).get('sala');
+if (linkSala) history.replaceState(null, '', location.pathname);
+const SCENIC = new Set(['online', 'sala', 'cadenaOnline', 'menu', 'welcome', 'profile', 'solo', 'roscoSetup', 'custom', 'records', 'reports', 'daily', 'hoy', 'modos', 'pokedleDia', 'tipos', 'cadena', 'ahorcado', 'casino', 'c21', 'alta', 'doble', 'rasca']);
 const $bg = document.getElementById('bg');
 // «¡Pellízquese!»: aparece en los últimos 5 segundos de cualquier reloj.
 let hurryOn = false;
@@ -1688,9 +1714,12 @@ function render() {
   else if (view === 'modos') html = modosView();
   else if (MINI.VIEWS[view]) html = MINI.VIEWS[view]();
   else if (CAS.VIEWS[view]) html = CAS.VIEWS[view]();
+  else if (ONLINE.VIEWS[view]) html = ONLINE.VIEWS[view]();
   else {
     const p = state.phase;
-    html = hudView() + (p === 'intro' || p === 'roundEnd' ? introView() : p === 'bet' ? betView() : p === 'rosco' ? roscoView() : p === 'end' ? (state.rosco ? roscoEnd() : endView()) : questionView());
+    if (state.online && p === 'question' && ONLINE.waiting()) html = hudView() + ONLINE.waitView();
+    else if (state.online && p === 'reveal') html = hudView() + questionView() + ONLINE.revealExtra();
+    else html = hudView() + (p === 'intro' || p === 'roundEnd' ? introView() : p === 'bet' ? betView() : p === 'rosco' ? roscoView() : p === 'end' ? (state.rosco ? roscoEnd() : endView()) : questionView());
   }
   // El paisaje queda fijo detrás en el menú y las pantallas de ajustes: solo se mueve el contenido.
   const scenic = SCENIC.has(view);
@@ -1793,7 +1822,7 @@ document.addEventListener('click', e => {
   const toggle = (arr, x) => arr.includes(x) ? arr.filter(y => y !== x) : arr.concat(x);
   const quiet = ['ac-pick', 'answer', 'typed', 'hint', 'mute', 'press', 'bomb-send', 'ord-ok', 'pr-ok', 'mt-ok', 'r-answer', 'r-pass', 'pd-send', 'est-ok', 'r-ready'];
   if (!quiet.includes(act)) Sound.play(act === 'menu' || act === 'confirm-no' || act === 'resume' ? 'back' : 'select');
-  if (MINI.act(act, v) || CAS.act(act, v)) return;
+  if (MINI.act(act, v) || CAS.act(act, v) || ONLINE.act(act, v)) return;
   switch (act) {
     case 'press': Sound.play('start'); if (profile) goto('menu'); else openProfile(true); return;
     case 'profile': openProfile(false); return;
@@ -1836,7 +1865,8 @@ document.addEventListener('click', e => {
     case 'modos': case 'go-modos': goto('modos'); return;
     case 'casino': case 'go-casino': goto('casino'); return;
     case 'mini-open': MINI.open(v); return;
-    case 'online': toast('Los duelos en línea vienen en la próxima actualización.'); return;
+    case 'online': case 'go-online': goto('online'); return;
+    case 'on-quit': closeOverlay(); ONLINE.leave(); return;
     case 'idioma': cfg.idiomaMode = v; break;
     case 'timer': cfg.timer = +v; break;
     case 'startSolo': saveCfg(); startGame({ ...shared(), type: cfg.solo.type, perPlayer: cfg.solo.perRound, duration: cfg.solo.duration, players: [myName()] }); return;
@@ -1988,6 +2018,7 @@ document.addEventListener('keydown', e => {
     if (view === 'game' && state?.phase !== 'end') { openOverlay('pause'); return; }
     if (view !== 'title' && view !== 'menu' && view !== 'game' && view !== 'welcome') { goto('menu'); return; }
   }
+  if (!overlay && ONLINE.VIEWS[view] && e.target.matches('input') && e.key === 'Enter') { e.preventDefault(); ONLINE.enter(); return; }
   if (!overlay && (MINI.VIEWS[view])) {
     if (e.target.matches('input') && e.key === 'Enter') { e.preventDefault(); MINI.enter(); return; }
     if (!e.target.matches('input,textarea') && !e.ctrlKey && !e.metaKey && MINI.key(e.key)) { e.preventDefault(); return; }
@@ -2012,6 +2043,12 @@ const modApi = {
   addFichas: n => addFichas(n), fichas: () => fichas, hurry: on => setHurry(on),
 };
 const MINI = createMinis(modApi);
+const ONLINE = createOnline({
+  ...modApi, db: () => dbRef, uid: () => userId, getState: () => state, setState: s => { state = s; },
+  recordEnd: () => { recordEnd(); Sound.play(endInfo.online?.won ? 'win' : 'over'); if (endInfo.medals?.length) setTimeout(() => toast(`¡Nueva medalla: ${endInfo.medals[0].medal.name}!`), 900); },
+  history: () => store.load('pt-history', {}), pColor: i => pColor(i), avatar: (p, c) => avatar(p, c), lineFor, WIN_LINES, LOSE_LINES,
+  profile: () => ({ name: myName(), color: profile?.color, icon: profile?.icon }), grantMedal: id => grantMedal(id),
+});
 const CAS = createCasino(modApi);
 
 // ---------- arranque ----------
@@ -2024,8 +2061,9 @@ async function start(saved = {}) {
     if (saved.state) { state = saved.state; view = saved.view || 'game'; last.scores = state.scores.slice(); }
     else if (saved.view && saved.view !== 'game') view = saved.view;
     render();
+    if (linkSala && profile) ONLINE.openLink(linkSala);
   } catch (err) {
-    $app.innerHTML = `<main><div class="box"><p>No se pudieron cargar los datos de la Pokédex. Recarga la página.</p><p class="hint">${esc(err.message)}</p></div></main>`;
+    $app.innerHTML = `<main><div class="box"><p>No se pudieron cargar los datos de la Pokédex. Recargue la página.</p><p class="hint">${esc(err.message)}</p></div></main>`;
   }
 }
 window.claude?.hot?.snapshot?.(() => ({ state, view }));

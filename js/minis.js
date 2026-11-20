@@ -41,24 +41,35 @@ export function createMinis(api) {
     const [y, m, d] = t.date.split('-');
     return `JUASmon Pokédle ${d}/${m} · ${t.rec.won ? t.rec.guesses.length : 'X'}/${PD_MAX}\n${lines.join('\n')}`;
   }
+  // Leyenda con ejemplos de colores, para que se entienda a la primera.
+  const PD_LEGEND = `<div class="pdlegend">
+      <span><i class="sw ok"></i>Igual</span>
+      <span><i class="sw near"></i>Tiene ese tipo, pero en el otro lugar</span>
+      <span><i class="sw no"></i>No coincide</span>
+      <span><i class="sw arrow">▲</i>El secreto es mayor</span>
+      <span><i class="sw arrow">▼</i>El secreto es menor</span>
+    </div>`;
   function pokedleView() {
     const t = pdToday(), a = ctx().byId.get(t.secret), cx = ctx();
-    const cell = (g, key, f) => {
-      let txt;
-      if (key === 't1') txt = api.badge(g.types[0]);
-      else if (key === 't2') txt = g.types[1] ? api.badge(g.types[1]) : '<span class="hint">—</span>';
-      else txt = `${key === 'gen' ? g.gen : key === 'h' ? `${(g.h / 10).toLocaleString('es')} m` : `${(g.w / 10).toLocaleString('es')} kg`}${f === 'up' ? ' ▲' : f === 'down' ? ' ▼' : ''}`;
-      return `<td class="pdc ${f}">${txt}</td>`;
-    };
-    const rows = t.rec.guesses.map(id => { const g = cx.byId.get(id), f = E.pdFeedback(g, a); return `<tr><td>${esc(g.name)}</td>${['t1', 't2', 'gen', 'h', 'w'].map(k => cell(g, k, f[k])).join('')}</tr>`; }).join('');
-    const table = rows ? `<div class="box"><div class="scroll"><table class="pdt"><thead><tr><th>Intento</th><th>Tipo 1</th><th>Tipo 2</th><th>Gen</th><th>Altura</th><th>Peso</th></tr></thead><tbody>${rows}</tbody></table></div></div>` : '';
+    const tile = (label, inner, f) => `<div class="pdtile ${f}"><small>${label}</small><span>${inner}</span></div>`;
+    const cards = t.rec.guesses.slice().reverse().map(id => {
+      const g = cx.byId.get(id), f = E.pdFeedback(g, a), arrow = k => f[k] === 'up' ? ' ▲' : f[k] === 'down' ? ' ▼' : '';
+      return `<div class="pdcard"><b>${esc(g.name)}</b><div class="pdtiles">
+        ${tile('Tipo 1', cx.typeName.get(g.types[0]), f.t1)}
+        ${tile('Tipo 2', g.types[1] ? cx.typeName.get(g.types[1]) : '—', f.t2)}
+        ${tile('Gen', `${g.gen}${arrow('gen')}`, f.gen === 'ok' ? 'ok' : 'no')}
+        ${tile('Altura', `${(g.h / 10).toLocaleString('es')} m${arrow('h')}`, f.h === 'ok' ? 'ok' : 'no')}
+        ${tile('Peso', `${(g.w / 10).toLocaleString('es')} kg${arrow('w')}`, f.w === 'ok' ? 'ok' : 'no')}
+      </div></div>`;
+    }).join('');
     const left = PD_MAX - t.rec.guesses.length;
     let top;
     if (!t.rec.done) {
-      top = `<div class="box"><p class="q">Adivine el Pokémon secreto de hoy. Es el mismo para todos y cambia a medianoche, hora de Costa Rica.</p>
-        <p class="hint">Verde: igual. Amarillo: ese tipo lo tiene, pero en el otro lugar. ▲ el secreto es mayor, ▼ es menor.</p></div>
-        <div class="box field"><div class="row"><input class="input" id="typed" data-ac="pokemon" autocomplete="off" placeholder="Escriba un Pokémon" style="flex:1"><button class="btn" data-act="pdd-send">Adivinar</button></div>
-        ${st.msg ? `<p class="flash bad keep">${esc(st.msg)}</p>` : ''}<p class="hint">${api.plural(left, 'intento restante', 'intentos restantes')}.</p></div>`;
+      top = `<div class="box"><p class="q">Adivine el Pokémon secreto de hoy en ${PD_MAX} intentos. Es el mismo para todos y cambia a medianoche, hora de Costa Rica.</p>
+        <p class="hint">Cada intento le da pistas comparando su Pokémon con el secreto:</p>${PD_LEGEND}</div>
+        <div class="box field"><input class="input" id="typed" data-ac="pokemon" autocomplete="off" placeholder="Escriba un Pokémon">
+        <div class="row between"><span class="hint">${api.plural(left, 'intento restante', 'intentos restantes')}</span><button class="btn" data-act="pdd-send">Adivinar</button></div>
+        ${st.msg ? `<p class="flash bad keep">${esc(st.msg)}</p>` : ''}</div>`;
     } else {
       const title = t.rec.won ? `¡JUAS! En ${api.plural(t.rec.guesses.length, 'intento', 'intentos')}` : `Diay, no. Era ${a.name}`;
       top = `<div class="box result"><p class="verdict px ${t.rec.won ? 'ok' : 'bad'}" data-tw="${esc(title)}">${esc(title)}</p>
@@ -67,7 +78,7 @@ export function createMinis(api) {
         <div class="row end"><button class="btn ghost" data-act="go-hoy">Volver a Hoy</button><button class="btn" data-act="pdd-share">Compartir</button></div>
         <p class="hint">Mañana hay otro.</p></div>`;
     }
-    return `${api.screenHead('Pokédle del día', 'hoy')}<main class="${api.F().newScreen ? 'enter' : ''}">${top}${table}</main>`;
+    return `${api.screenHead('Pokédle del día', 'hoy')}<main class="${api.F().newScreen ? 'enter' : ''}">${top}${cards ? `<div class="pdcards">${cards}</div>` : ''}</main>`;
   }
   function pdGuess(text) {
     const t = pdToday();

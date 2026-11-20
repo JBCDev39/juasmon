@@ -450,7 +450,7 @@ body.scenic main .box,body.scenic main .card{box-shadow:inset 0 0 0 3px var(--bo
 .segs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .seg{display:grid;justify-items:center;gap:8px;padding:12px 6px;border-radius:12px;border:3px solid #1d2321;background:#fff;color:#1d2321;box-shadow:0 4px 0 #1d2321;transition:transform .15s,background .2s}
 .seg svg{width:26px;height:26px}
-.seg .px{font-size:9px;line-height:1.4;text-align:center}
+.seg .seglbl{font-size:13px;font-weight:700;line-height:1.2;text-align:center;overflow-wrap:anywhere;hyphens:auto}
 .seg[aria-pressed=true]{background:var(--yellow);transform:translateY(2px);box-shadow:0 2px 0 #1d2321}
 .modeinfo .q{margin:0}
 .summary{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;text-align:start;padding:12px 14px;border-radius:12px;border:2px solid var(--ink);background:var(--box);color:var(--ink);min-height:52px}
@@ -504,14 +504,58 @@ main.solo{padding-bottom:0}
 .castile b{font-size:11px;font-weight:400}.castile span{font-size:13.5px}
 .castile:active{transform:translateY(3px)}
 .pcards{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.pcard{display:grid;gap:4px;justify-items:start;min-width:120px;flex:1 1 120px;max-width:170px;padding:10px;border-radius:10px;border:2px solid var(--ink);background:var(--box);animation:pop .35s both}
-.pcard .pname{font-weight:700}.pcard .pval{font-size:18px;color:var(--red)}.pcard .types{transform:scale(.85);transform-origin:left}
-.pcard.back{place-items:center;min-height:90px;background:repeating-linear-gradient(45deg,#e3350d 0 10px,#c42a08 10px 20px);color:#fff;font-size:22px}
+.pcard{display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0;padding:8px 10px;border-radius:10px;border:2px solid var(--ink);background:var(--box);animation:pop .35s both}
+.pcard .pname{font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pcard .pval{font-size:13px;color:var(--red);flex:none}
+.pcard .types{display:flex;gap:4px;flex-wrap:wrap}
+.pcard.back{justify-content:center;min-height:40px;background:repeating-linear-gradient(45deg,#e3350d 0 10px,#c42a08 10px 20px);color:#fff;font-size:14px}
+.table21{display:grid;gap:12px}
+.status21{margin:0;font-size:17px;font-weight:700;padding:8px 12px;border-radius:10px;background:var(--field)}
+.status21.ok{background:color-mix(in srgb,var(--ok) 30%,var(--box))}.status21.bad{background:color-mix(in srgb,var(--bad) 22%,var(--box))}
+.side{display:grid;gap:6px}
+.sidehead{display:flex;align-items:baseline;gap:8px}.sidehead b{font-size:10px;font-weight:400}
+.sidehead .tot{font-size:20px;margin-left:auto}.sidehead .tot.over{color:var(--bad)}.sidehead .tot.exact{color:var(--ok)}
+.sbar{height:10px;border:2px solid var(--ink);border-radius:6px;overflow:hidden;background:var(--field)}.sbar i{display:block;height:100%;background:var(--ok);transition:width .5s}
+.mcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:6px}
+.vsrow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:end}
+.vsrow>div{display:grid;gap:4px;min-width:0}
+.vsrow .pcard{flex-direction:column;align-items:flex-start}.vsrow .pcard .pname{white-space:normal;overflow-wrap:anywhere}.vsrow .pcard .pval{font-size:16px}
+.casino .playbar{justify-content:flex-end}
+/* Pokédle con tarjetas */
+.pdlegend{display:grid;gap:6px;margin-top:8px;font-size:14px}
+.pdlegend span{display:flex;align-items:center;gap:8px}
+.sw{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:5px;border:2px solid var(--ink);font-style:normal;font-size:11px;flex:none}
+.sw.ok,.pdtile.ok{background:#2e9e4f;color:#fff}.sw.near,.pdtile.near{background:#ffcb05;color:#1d2321}.sw.no,.pdtile.no{background:light-dark(#d7dbd8,#3a4440);color:var(--ink)}.sw.arrow{background:var(--box)}
+.pdcards{display:grid;gap:10px}
+.pdcard{background:var(--box);border:3px solid var(--ink);border-radius:12px;padding:10px;display:grid;gap:8px;animation:rise .35s both}
+.pdtiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+.pdtile:nth-child(-n+2){grid-column:span 3}.pdtile:nth-child(n+3){grid-column:span 2}
+.pdtile{border:2px solid var(--ink);border-radius:8px;padding:5px 3px;display:grid;gap:2px;text-align:center;min-width:0}
+.pdtile small{font-size:10px;opacity:.85}.pdtile span{font-size:13px;font-weight:700;line-height:1.2}
 .rgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:330px;margin:0 auto}
 .rcell{aspect-ratio:1;border-radius:12px;border:3px solid #1d2321;display:grid;place-items:center}
 button.rcell{background:repeating-linear-gradient(135deg,#b8b8b8 0 8px,#d0d0d0 8px 16px);font-size:20px;color:#555}
 .rcell.open{background:#fff;animation:pop .3s both}.rcell.open svg{width:60%;height:60%}
 .rcell.win{background:color-mix(in srgb,var(--yellow) 55%,#fff)}
+/* duelos en línea */
+.codebox{display:grid;gap:4px;text-align:center}
+.bigcode{font-size:clamp(26px,8vw,40px);margin:4px 0 8px;letter-spacing:2px;color:var(--red)}
+.codebox .row{justify-content:center}
+.lobby{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:center}
+.lplayer{display:grid;justify-items:center;gap:8px;text-align:center;min-width:0}
+.lplayer span{display:grid;gap:2px;min-width:0}.lplayer b{font-size:11px;overflow-wrap:anywhere}.lplayer small{font-size:12px}
+.lplayer.empty .avatar{background:var(--field);border-style:dashed;animation:blink 1.4s steps(2) infinite}
+.tog.ro{cursor:default}
+.codein{text-transform:uppercase;font-size:16px;letter-spacing:1px}
+.waitbox{display:grid;gap:10px;justify-items:center;text-align:center;padding:30px 20px}
+.dots{display:flex;gap:8px}.dots i{width:12px;height:12px;background:var(--ink);border-radius:2px;animation:blink 1s steps(2) infinite}.dots i:nth-child(2){animation-delay:.33s}.dots i:nth-child(3){animation-delay:.66s}
+.duelres{display:grid;gap:8px}
+.drow{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line)}
+.drow .dn{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drow .dv.ok{color:var(--ok)}.drow .dv.mid{color:#c98a00}.drow .dv.bad{color:var(--bad)}
+.drow .dt{color:var(--soft);font-size:14px}.drow b{font-size:12px}
+.dbonus{grid-column:1/-1;justify-self:start;font-size:9px;background:var(--yellow);color:#1d2321;border:2px solid #1d2321;border-radius:6px;padding:3px 6px}
+.duelscore{display:flex;flex-wrap:wrap;gap:8px}
+.duelscore>span{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:99px;border:2px solid var(--c);background:var(--box);font-weight:700}
 .typo{margin:4px 0 8px;font-size:15px;color:var(--ink)}.typo b:first-child{color:#e3350d;font-family:'Press Start 2P',monospace;font-size:11px;margin-right:4px}
 </style>
 </head>

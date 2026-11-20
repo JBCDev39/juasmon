@@ -251,6 +251,19 @@ export const isMixed = state => state.config.type === 'supervivencia' || state.c
 function allInDue(s) {
   return !!s.config.allIn && s.config.type === 'clasica' && isMixed(s) && s.players.length === 1 && !s.config.daily && s.qi === questionsPerRound(s) - 1;
 }
+// ---------- duelo en línea ----------
+// El anfitrión lleva un estado "sombra" de 1 jugador solo para sacar preguntas sin repetir,
+// y califica las respuestas de los dos con las mismas reglas de siempre.
+export const DUEL_FORMATS = ['preguntas', 'vf', 'masomenos', 'idioma', 'pokedex', 'intruso', 'orden', 'pares', 'multi', 'escribir', 'estimacion'];
+export function duelShadow(config, seed, history = {}) {
+  return createGame({ ...config, type: 'clasica', structure: 'mezclada', players: ['A'], perPlayer: 999, timer: 0 }, seed, history);
+}
+export function duelNext(shadow, ctx) {
+  return nextQuestion({ ...shadow, qi: shadow.q ? shadow.qi + 1 : 0, phase: 'question' }, ctx);
+}
+export function gradeOne(q, ctx, value) {
+  return grade({ q, config: { type: 'duelo' }, hints: 0, players: [{}], scores: [0] }, ctx, value);
+}
 export function currentPlayer(state) {
   return state.qi % state.players.length;
 }

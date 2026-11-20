@@ -27,7 +27,14 @@ export function createCasino(api) {
   const head = title => `${api.screenHead(title, title === 'Casino Azulona' ? 'menu' : 'casino')}<main class="${api.F().newScreen ? 'enter' : ''} casino">`;
   const card = (p, val, label, hidden = false) => hidden
     ? `<div class="pcard back"><span class="px">?</span></div>`
-    : `<div class="pcard"><span class="pname">${esc(p.name)}</span>${api.typePills(p)}${val !== null ? `<span class="pval px">${val}</span><span class="hint">${label}</span>` : ''}</div>`;
+    : `<div class="pcard"><span class="pname">${esc(p.name)}</span>${val !== null ? `<span class="pval px">${val}</span>` : '<span class="pval px">?</span>'}</div>`;
+  // Lado de la mesa: nombre, total grande, barrita hacia 300 y las cartas en fila.
+  const side = (who, cards, total, shown, cls = '') => {
+    const pct = Math.min(100, total / TARGET * 100), over = total > TARGET;
+    return `<div class="side ${cls}"><div class="sidehead"><b class="px">${who}</b><span class="tot px ${over ? 'over' : total === TARGET ? 'exact' : ''}">${shown}</span><span class="hint">/ ${TARGET}</span></div>
+      <div class="sbar"><i style="width:${pct}%;${over ? 'background:var(--bad)' : ''}"></i></div>
+      <div class="mcards">${cards}</div></div>`;
+  };
 
   // ---------- menú del casino ----------
   function hubView() {
@@ -48,45 +55,61 @@ export function createCasino(api) {
   // ---------- Pokémon 21 ----------
   const TARGET = 300, HOUSE_STOP = 250;
   const sum = hand => hand.reduce((a, c) => a + c.val, 0);
+  let stepTimer = null;
   function deal21() {
     if (bet > chips() || bet <= 0) return;
     take(bet);
     const [label, idx] = randStat(), used = [];
     const draw = () => { const p = randMon(used); used.push(p.id); return { p, val: p.stats[idx] }; };
-    g = { game: '21', phase: 'play', label, idx, used, draw, bet, me: [draw(), draw()], house: [draw(), draw()] };
-    if (sum(g.me) > TARGET) end21();
-    api.render();
+    g = { game: '21', phase: 'play', label, idx, used, draw, bet, me: [draw(), draw()], house: [draw(), draw()], shown: 1 };
+    if (sum(g.me) >= TARGET) stand21(); else api.render();
   }
-  function end21() {
-    while (sum(g.me) <= TARGET && sum(g.house) < HOUSE_STOP) g.house.push(g.draw());
+  // La casa revela y pide sus cartas una por una, con una pausa, para que se pueda seguir.
+  function stand21() {
+    g.phase = 'house';
+    clearTimeout(stepTimer);
+    const step = () => {
+      if (g.game !== '21' || g.phase !== 'house') return;
+      if (g.shown < g.house.length) { g.shown++; api.Sound.play('select'); api.render(); stepTimer = setTimeout(step, 800); return; }
+      if (sum(g.me) <= TARGET && sum(g.house) < HOUSE_STOP) { g.house.push(g.draw()); api.render(); stepTimer = setTimeout(step, 150); return; }
+      finish21();
+    };
+    api.render();
+    stepTimer = setTimeout(step, 700);
+  }
+  function finish21() {
     const m = sum(g.me), h = sum(g.house);
     let res, win = 0;
-    if (m > TARGET) res = 'Se pasó.';
+    if (m > TARGET) res = 'Se pasó de 300.';
     else if (h > TARGET) { res = 'La casa se pasó.'; win = m === TARGET ? Math.floor(g.bet * 2.5) : g.bet * 2; }
     else if (m > h) { res = m === TARGET ? `¡${TARGET} exacto!` : 'Le ganó a la casa.'; win = m === TARGET ? Math.floor(g.bet * 2.5) : g.bet * 2; }
     else if (m === h) { res = 'Empate: recupera su apuesta.'; win = g.bet; }
     else res = 'La casa ganó.';
     pay(win);
-    g.phase = 'end'; g.res = res; g.win = win;
+    g.phase = 'end'; g.res = res; g.win = win; g.shown = g.house.length;
     api.Sound.play(win > g.bet ? 'juas' : win === g.bet ? 'ok' : 'over');
     api.render();
   }
   function view21() {
     const top = `${head('Pokémon 21')}${chipLine()}`;
-    if (g.game !== '21') return `${top}<div class="box"><p class="q">Se reparten Pokémon y se suma una estadística (sale al azar en cada mano). Acérquese a ${TARGET} sin pasarse.</p>
-      <p class="hint">La casa pide hasta llegar a ${HOUSE_STOP}. Si gana, cobra el doble; con ${TARGET} exacto, 2,5 veces.</p></div>
+    if (g.game !== '21') return `${top}<div class="box"><p class="q">Se reparten Pokémon y se suma una estadística, que sale al azar en cada mano. Acérquese a ${TARGET} sin pasarse.</p>
+      <p class="hint">Primero juega usted: pide cartas o se planta. Después la casa pide hasta llegar a ${HOUSE_STOP}. Si gana, cobra el doble; con ${TARGET} exacto, 2,5 veces.</p></div>
       <div class="box field">${betPicker()}<div class="row end"><button class="btn" data-act="c21-deal" ${chips() ? '' : 'disabled'}>Repartir</button></div></div></main>`;
-    const hideHouse = g.phase === 'play';
-    const hv = hideHouse ? g.house[0].val : sum(g.house);
-    return `${top}<div class="box"><span class="hint px catl">Se suma: ${g.label} · Apuesta ${g.bet}</span>
-      <p class="l px" style="margin-top:12px">Casa · ${hideHouse ? `${hv} + ?` : hv}</p>
-      <div class="pcards">${g.house.map((c, i) => card(c.p, c.val, g.label, hideHouse && i === 1)).join('')}</div>
-      <p class="l px" style="margin-top:12px">Usted · ${sum(g.me)}${sum(g.me) > TARGET ? ' · ¡se pasó!' : ''}</p>
-      <div class="pcards">${g.me.map(c => card(c.p, c.val, g.label)).join('')}</div>
-      ${g.phase === 'play'
-        ? `<div class="row end" style="margin-top:12px"><button class="btn ghost" data-act="c21-stand">Plantarse</button><button class="btn" data-act="c21-hit">Pedir otra</button></div>`
-        : `<p class="flash ${g.win > g.bet ? 'ok' : g.win === g.bet ? '' : 'bad'} keep">${esc(g.res)} ${g.win > g.bet ? `+${g.win - g.bet} fichas` : g.win === g.bet ? '' : `−${g.bet} fichas`}</p>
-           <div class="row end"><button class="btn ghost" data-act="go-casino">Casino</button><button class="btn" data-act="c21-new">Otra mano</button></div>`}</div></main>`;
+    const hv = g.house.slice(0, g.shown), hsum = sum(hv);
+    const houseCards = g.house.map((c, i) => card(c.p, c.val, g.label, i >= g.shown)).join('');
+    const meCards = g.me.map(c => card(c.p, c.val, g.label)).join('');
+    const msum = sum(g.me);
+    const status = g.phase === 'play' ? 'Su turno: ¿pide otra carta o se planta?' : g.phase === 'house' ? 'La casa está jugando…' : `${g.res} ${g.win > g.bet ? `+${g.win - g.bet} fichas` : g.win === g.bet ? '' : `−${g.bet} fichas`}`;
+    const cls = g.phase === 'end' ? (g.win > g.bet ? 'ok' : g.win === g.bet ? '' : 'bad') : '';
+    return `${top}<div class="box table21">
+      <div class="row between"><span class="hint px catl">Se suma: ${g.label}</span><span class="hint">Apuesta: ${g.bet}</span></div>
+      <p class="status21 ${cls}">${esc(status)}</p>
+      ${side('Casa', houseCards, hsum, g.phase === 'play' ? `${hsum} + ?` : hsum, 'house')}
+      ${side('Usted', meCards, msum, msum, 'me')}
+      </div>
+      <div class="playbar">${g.phase === 'play'
+        ? '<button class="btn ghost" data-act="c21-stand">Plantarse</button><button class="btn" data-act="c21-hit">Pedir otra</button>'
+        : g.phase === 'end' ? '<button class="btn ghost" data-act="go-casino">Casino</button><button class="btn" data-act="c21-new">Otra mano</button>' : ''}</div></main>`;
   }
 
   // ---------- Carta alta ----------
@@ -111,11 +134,11 @@ export function createCasino(api) {
     if (g.game !== 'alta') return `${top}<div class="box"><p class="q">Le sale un Pokémon y la casa tiene otro escondido. Usted apuesta sin saber qué estadística se va a comparar.</p>
       <p class="hint">Si su Pokémon tiene más, cobra el doble. Si empatan, recupera la apuesta.</p>
       <div class="row end" style="margin-top:12px"><button class="btn" data-act="alta-deal" ${chips() ? '' : 'disabled'}>Repartir</button></div></div></main>`;
-    if (g.phase === 'bet') return `${top}<div class="box"><div class="pcards">${card(g.me, null)}${card(g.house, null, '', true)}</div>
+    if (g.phase === 'bet') return `${top}<div class="box"><div class="vsrow"><div><span class="hint">Usted</span><div class="pcard"><span class="pname">${esc(g.me.name)}</span>${api.typePills(g.me)}</div></div><div class="vsmark px">vs</div><div><span class="hint">Casa</span>${card(g.house, null, '', true)}</div></div>
       <p class="hint" style="margin-top:10px">Este es su Pokémon. ¿Cuánto le apuesta?</p></div>
       <div class="box field">${betPicker()}<div class="row end"><button class="btn" data-act="alta-reveal" ${chips() ? '' : 'disabled'}>Revelar</button></div></div></main>`;
     return `${top}<div class="box"><span class="hint px catl">Salió: ${g.label}</span>
-      <div class="pcards" style="margin-top:10px">${card(g.me, g.m, g.label)}<div class="vsmark px">vs</div>${card(g.house, g.h, g.label)}</div>
+      <div class="vsrow" style="margin-top:10px"><div><span class="hint">Usted</span>${card(g.me, g.m, g.label)}</div><div class="vsmark px">vs</div><div><span class="hint">Casa</span>${card(g.house, g.h, g.label)}</div></div>
       <p class="flash ${g.win > g.bet ? 'ok' : g.win === g.bet ? '' : 'bad'} keep">${g.win > g.bet ? `¡JUAS! +${g.win - g.bet} fichas` : g.win === g.bet ? 'Empate: recupera su apuesta.' : `Diay, no. −${g.bet} fichas`}</p>
       <div class="row end"><button class="btn ghost" data-act="go-casino">Casino</button><button class="btn" data-act="alta-deal">Otra carta</button></div></div></main>`;
   }
@@ -158,7 +181,7 @@ export function createCasino(api) {
         <div class="row end"><button class="btn ghost" data-act="go-casino">Casino</button><button class="btn" data-act="doble-new">Otra vez</button></div></div></main>`;
     }
     return `${top}<div class="box"><span class="hint px catl">${g.label} · en juego ${g.pot} fichas</span>
-      <div class="pcards" style="margin-top:10px">${card(g.a, va, g.label)}<div class="vsmark px">?</div>${card(g.b, null)}</div>
+      <div class="vsrow" style="margin-top:10px"><div>${card(g.a, va, g.label)}</div><div class="vsmark px">?</div><div>${card(g.b, null)}</div></div>
       ${last}<p class="q">¿${esc(g.b.name)} tiene más o menos ${g.label} que ${esc(g.a.name)}?</p>
       <div class="row end"><button class="btn ghost" data-act="doble-cash" ${g.streak ? '' : 'disabled'}>Retirarse con ${g.pot}</button><button class="btn" data-act="doble-less">Menos</button><button class="btn" data-act="doble-more">Más</button></div></div></main>`;
   }
@@ -214,8 +237,8 @@ export function createCasino(api) {
       case 'cas-open': g = {}; api.goto({ 21: 'c21', alta: 'alta', doble: 'doble', rasca: 'rasca' }[v]); return true;
       case 'cas-bet': bet = +v; api.render(); return true;
       case 'c21-deal': case 'c21-new': if (a === 'c21-new') { g = {}; api.render(); } else deal21(); return true;
-      case 'c21-hit': g.me.push(g.draw()); if (sum(g.me) >= TARGET) end21(); else api.render(); return true;
-      case 'c21-stand': end21(); return true;
+      case 'c21-hit': if (g.phase !== 'play') return true; g.me.push(g.draw()); api.Sound.play('select'); if (sum(g.me) >= TARGET) stand21(); else api.render(); return true;
+      case 'c21-stand': if (g.phase === 'play') stand21(); return true;
       case 'alta-deal': altaDeal(); return true;
       case 'alta-reveal': altaReveal(); return true;
       case 'doble-start': dobleStart(); return true;
@@ -231,7 +254,7 @@ export function createCasino(api) {
   return {
     VIEWS, act,
     // Si se sale a mitad de Doble o nada, se cobra lo que tenía en juego para no perderlo.
-    leave: () => { if (g.game === 'doble' && g.phase === 'play') dobleCash(); if (g.game === '21' && g.phase === 'play') end21(); g = {}; },
+    leave: () => { if (g.game === 'doble' && g.phase === 'play') dobleCash(); if (g.game === '21' && (g.phase === 'play' || g.phase === 'house')) { clearTimeout(stepTimer); while (sum(g.me) <= TARGET && sum(g.house) < HOUSE_STOP) g.house.push(g.draw()); finish21(); } g = {}; },
     scratchDone: () => { const s = scratchState(); return s.date === api.crDate() && s.claimed; },
     scratchPrize: () => scratchState().prize,
   };

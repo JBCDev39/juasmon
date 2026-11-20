@@ -19,12 +19,16 @@ function wrapFirestore(fs, db) {
     get: async () => docsOf(await fs.getDocs(fs.query(fs.collection(db, path), ...parts))),
   });
   return {
-    kind: 'firebase',
+    kind: 'firebase', live: true,
     collection: path => ({
       ...query(path),
       doc: id => ({
         set: data => fs.setDoc(fs.doc(db, path, id), data),
         delete: () => fs.deleteDoc(fs.doc(db, path, id)),
+        // Para las salas en línea: leer, cambiar campos y escuchar cambios en vivo.
+        get: async () => { const d = await fs.getDoc(fs.doc(db, path, id)); return d.exists() ? d.data() : null; },
+        update: data => fs.updateDoc(fs.doc(db, path, id), data),
+        watch: (cb, onErr) => fs.onSnapshot(fs.doc(db, path, id), d => cb(d.exists() ? d.data() : null), onErr || (() => {})),
       }),
     }),
   };
@@ -32,6 +36,8 @@ function wrapFirestore(fs, db) {
 
 // Devuelve { db, userId } o { db: null, userId: null }.
 export async function connectCloud() {
+  // Solo para las pruebas automáticas: una nube de mentira dentro de la página.
+  if (window.__JUAS_TEST_DB) return { db: window.__JUAS_TEST_DB, userId: window.__JUAS_TEST_UID || 'test' };
   if (firebaseConfig?.apiKey && firebaseConfig?.projectId) {
     try {
       const [app, auth, fs] = await Promise.all([
