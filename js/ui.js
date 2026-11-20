@@ -116,7 +116,7 @@ function renameRecords(from, to) {
   store.save('pt-records', records);
 }
 function openProfile(first) {
-  profDraft = { name: profile?.name ?? (cfg.solo.name.trim() || ''), color: profile?.color || AV_COLORS[Math.floor(Math.random() * AV_COLORS.length)], icon: profile?.icon || 'estrella', first, warn: '' };
+  profDraft = { name: profile?.name ?? (store.load('pt-config', null)?.solo?.name?.trim() || ''), color: profile?.color || AV_COLORS[Math.floor(Math.random() * AV_COLORS.length)], icon: profile?.icon || 'estrella', first, warn: '' };
   goto(first ? 'welcome' : 'profile');
   if (dbRef) loadDailyBoard();
 }
