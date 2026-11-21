@@ -9,6 +9,8 @@ import { connectCloud } from './nube.js';
 import { createMinis } from './minis.js';
 import { createCasino } from './casino.js';
 import { createOnline } from './online.js';
+import { createSky, weatherLayer, holidayLayer, WEATHER_LABEL } from './cielo.js';
+import { createMusic } from './musica.js';
 
 {
 const $app = document.getElementById('app');
@@ -40,7 +42,7 @@ const RANKS = [[0, 'Novato'], [25, 'Entrenador'], [75, 'Líder de gimnasio'], [1
 const rankOf = xp => { let r = RANKS[0]; for (const x of RANKS) if (xp >= x[0]) r = x; const i = RANKS.indexOf(r); return { name: r[1], next: RANKS[i + 1] || null, i }; };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
-const APP_VERSION = 11;
+const APP_VERSION = 12;
 const FLAG_REASONS = ['La respuesta está mal', 'La pregunta no tiene sentido o es confusa', 'Un nombre o dato está mal escrito', 'Es demasiado fácil o difícil', 'Otro'];
 const FLAG_SVG = '<svg class="flagico" viewBox="0 0 10 12" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="0" width="1" height="12" fill="currentColor"/><rect x="2" y="1" width="6" height="1" fill="var(--red)"/><rect x="2" y="2" width="7" height="3" fill="var(--red)"/><rect x="2" y="5" width="5" height="1" fill="var(--red)"/></svg>';
 const store = {
@@ -302,12 +304,19 @@ const ICON_PAUSE = '<svg viewBox="0 0 18 18" fill="currentColor" aria-hidden="tr
 
 // Paisaje pixelado de 320×180, se escala nítido a cualquier pantalla.
 let sceneCache = '';
+// Clima de Costa Rica y fechas ticas: si cambian, se vuelve a dibujar el paisaje.
+const SKY = createSky(store, () => {
+  sceneCache = '';
+  if ($bg.firstChild) $bg.innerHTML = scene();
+  if (view === 'title' || view === 'menu') render();
+});
 function scene() {
   if (sceneCache) return sceneCache;
   let s = 12345;
   const rnd = () => (s = s * 16807 % 2147483647) / 2147483647;
-  const W = 320, H = 180;
-  let out = `<svg class="scene" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice" shape-rendering="crispEdges" aria-hidden="true">
+  const W = 320, H = 180, sky = SKY.state();
+  const nClouds = sky.weather === 'despejado' ? 4 : sky.weather === 'parcial' ? 7 : 9;
+  let out = `<svg class="scene sky-${sky.night ? 'night' : 'day'} w-${sky.weather}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice" shape-rendering="crispEdges" aria-hidden="true">
     <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--sky1)"/><stop offset="1" style="stop-color:var(--sky2)"/></linearGradient></defs>
     <rect width="${W}" height="${H}" fill="url(#sky)"/>`;
   for (let i = 0; i < 40; i++) out += `<rect class="twinkle" x="${Math.floor(rnd() * W)}" y="${Math.floor(rnd() * 90)}" width="1" height="1" fill="var(--star)" style="animation-delay:${(-rnd() * 2.4).toFixed(2)}s"/>`;
@@ -316,7 +325,7 @@ function scene() {
   for (let y = -rad; y <= rad; y++) { const half = Math.floor(Math.sqrt(rad * rad - y * y)); out += `<rect x="${cx - half}" y="${cy + y}" width="${half * 2}" height="1" fill="var(--sun)"/>`; }
   // nubes que se mueven despacio
   const cloud = (w) => { let c = ''; const blocks = [[0, 4, w, 4], [4, 0, w - 10, 5], [w * .3 | 0, -3, w * .35 | 0, 4]]; for (const [x, y, bw, bh] of blocks) c += `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" fill="var(--cloud)"/>`; return c + `<rect x="2" y="8" width="${w - 2}" height="2" fill="var(--cloud2)"/>`; };
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < nClouds; i++) {
     const dur = 70 + rnd() * 70;
     out += `<g class="drift" style="animation-duration:${dur.toFixed(0)}s;animation-delay:${(-rnd() * dur).toFixed(0)}s"><g transform="translate(0 ${Math.floor(14 + rnd() * 58)})">${cloud(Math.floor(22 + rnd() * 26))}</g></g>`;
   }
@@ -333,6 +342,7 @@ function scene() {
     const x = Math.floor(rnd() * W), y = 156 + Math.floor(rnd() * 22);
     out += `<path class="sway" style="animation-delay:${(-rnd() * 2.6).toFixed(2)}s" d="M${x} ${y}h1v-4h1v4h1v-3h1v3h1v-5h1v5h1v-3h1v3h1v1h-9z" fill="var(--tuft)"/>`;
   }
+  out += holidayLayer(sky.holiday) + weatherLayer(sky.weather);
   sceneCache = out + '</svg>';
   return sceneCache;
 }
@@ -687,6 +697,12 @@ function titleView() {
     <div class="press"><b>Presione START</b><span class="px">${TOUCH ? 'Toque la pantalla' : 'Presione Enter'}</span></div></div>`;
 }
 
+function skyLine() {
+  const sk = SKY.state();
+  const wx = sk.live ? `San José: ${WEATHER_LABEL[sk.weather]}${sk.night ? ', de noche' : ''}` : '';
+  if (!sk.holiday && !wx) return '';
+  return `<div class="skyline">${sk.holiday ? `<b class="px">${esc(sk.holiday.label)}</b>` : ''}${wx ? `<span>${wx}</span>` : ''}</div>`;
+}
 function tile(act, title, desc, icon, color, i, badgeTxt = '') {
   return `<button class="tile" data-act="${act}" style="--cc:${color};--i:${i}"><span class="ico">${pixSvg(PIX[icon], '#1d2321')}</span><span class="tt"><b>${title}</b><span>${desc}</span></span>${badgeTxt ? `<span class="nbadge px">${badgeTxt}</span>` : ''}</button>`;
 }
@@ -707,7 +723,8 @@ function menuView() {
   const medals = myMedals().size, total = MEDALS.filter(m => !m.soon).length;
   const pend = pendingToday();
   return `<div class="home">
-    <div class="topbar"><button class="mini-wm" data-act="title"><b>JUAS</b><i>mon</i></button><div class="tools">${reportsBtn()}${soundBtn()}</div></div>
+    <div class="topbar"><button class="mini-wm" data-act="title"><b>JUAS</b><i>mon</i></button><div class="tools">${reportsBtn()}${musicBtn()}${soundBtn()}</div></div>
+    ${skyLine()}
     <button class="tcard" data-act="profile" aria-label="Mi perfil: ${esc(me)}">
       <span class="trow">${avatar(profile, 'big')}<span class="tinfo">
         <span class="tname"><b class="px">${esc(me)}</b><span class="rk">${rk.name}</span></span>
@@ -1461,11 +1478,13 @@ function renderOverlay() {
   if (overlay === 'pause' && state?.online) {
     inner = `<h2 class="px">Un toque…</h2><p class="hint">En línea el reloj sigue corriendo.</p><div class="dlist">
       <button class="ditem" data-act="resume" id="first">Seguir jugando</button>
+      <button class="ditem" data-act="music">${MUSIC.on ? 'Apagar la música' : 'Poner música'}</button>
       <button class="ditem danger" data-act="on-quit">Salir del duelo</button></div>`;
   } else if (overlay === 'pause') {
     inner = `<h2 class="px">Un toque…</h2><div class="dlist">
       <button class="ditem" data-act="resume" id="first">Continuar</button>
       <button class="ditem" data-act="settings">Ajustes</button>
+      <button class="ditem" data-act="music">${MUSIC.on ? 'Apagar la música' : 'Poner música'}</button>
       <button class="ditem danger" data-act="ask-home">Volver al inicio</button></div>`;
   } else if (overlay === 'settings') {
     const c = state.config, ta = c.type === 'contrarreloj' || c.type === 'rosco';
@@ -1683,6 +1702,12 @@ function countUp() {
 // Enlace de invitación: jbcdev39.github.io/juasmon/?sala=CÓDIGO
 const linkSala = new URLSearchParams(location.search).get('sala');
 if (linkSala) history.replaceState(null, '', location.pathname);
+const MUSIC = createMusic(Sound, store);
+let userTouched = false;
+const GAME_TRACK = new Set(['game', 'tipos', 'cadena', 'ahorcado', 'cadenaOnline', 'c21', 'alta', 'doble']);
+const syncMusic = () => { if (userTouched) MUSIC.play(GAME_TRACK.has(view) ? 'juego' : 'menu'); };
+const musicBtn = () => `<button class="ibtn" data-act="music" aria-label="${MUSIC.on ? 'Apagar la música' : 'Poner música'}" aria-pressed="${MUSIC.on}">${ICON_NOTE}<span>${MUSIC.on ? 'Música' : 'Sin música'}</span></button>`;
+const ICON_NOTE = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><path d="M5 0h7v2h-5v7h-1v1h-1v1h-3v-1h-1v-2h1v-1h3z"/><path d="M10 2h2v6h-1v1h-1v1h-2v-1h-1v-2h1v-1h2z"/></svg>';
 const SCENIC = new Set(['online', 'sala', 'cadenaOnline', 'menu', 'welcome', 'profile', 'solo', 'roscoSetup', 'custom', 'records', 'reports', 'daily', 'hoy', 'modos', 'pokedleDia', 'tipos', 'cadena', 'ahorcado', 'casino', 'c21', 'alta', 'doble', 'rasca']);
 const $bg = document.getElementById('bg');
 // «¡Pellízquese!»: aparece en los últimos 5 segundos de cualquier reloj.
@@ -1727,6 +1752,7 @@ function render() {
   document.body.classList.toggle('scenic', scenic);
   if (view !== 'game') setHurry(false);
   $app.innerHTML = html;
+  syncMusic();
   $app.classList.toggle('still', !F.newScreen);
   flash = '';
   if (F.newScreen) startTyping($app); else finishTyping();
@@ -1813,6 +1839,10 @@ document.addEventListener('input', e => {
   if (ri !== undefined) { cfg.rosco.players[+ri] = e.target.value; saveCfg(); }
 });
 
+// La música arranca con el primer toque (los navegadores no dejan sonar nada antes).
+const firstTouch = () => { if (!userTouched) { userTouched = true; syncMusic(); } };
+document.addEventListener('pointerdown', firstTouch, true);
+document.addEventListener('keydown', firstTouch, true);
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]');
   if (typers.length && !b) finishTyping();
@@ -1834,7 +1864,8 @@ document.addEventListener('click', e => {
     case 'prof-save': saveProfile(); return;
     case 'title': goto('title'); return;
     case 'menu': goto('menu'); return;
-    case 'mute': if (!v || (v === 'off') !== Sound.muted) Sound.toggle(); render(); if (overlay) renderOverlay(); return;
+    case 'mute': if (!v || (v === 'off') !== Sound.muted) Sound.toggle(); if (Sound.muted) MUSIC.stop(); render(); if (overlay) renderOverlay(); return;
+    case 'music': MUSIC.toggle(); render(); if (overlay) renderOverlay(); return;
     case 'solo': case 'multi': case 'custom': case 'records': goto(act); return;
     case 'daily': goto('daily'); loadDailyBoard(); return;
     case 'playDaily': if (!daily[crDate()]) startDaily(); return;

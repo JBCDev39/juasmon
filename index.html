@@ -556,6 +556,26 @@ button.rcell{background:repeating-linear-gradient(135deg,#b8b8b8 0 8px,#d0d0d0 8
 .dbonus{grid-column:1/-1;justify-self:start;font-size:9px;background:var(--yellow);color:#1d2321;border:2px solid #1d2321;border-radius:6px;padding:3px 6px}
 .duelscore{display:flex;flex-wrap:wrap;gap:8px}
 .duelscore>span{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:99px;border:2px solid var(--c);background:var(--box);font-weight:700}
+/* cielo: día o noche de Costa Rica y el clima de San José */
+.scene.sky-day{color-scheme:light}.scene.sky-night{color-scheme:dark}
+.scene.w-nublado,.scene.w-lluvia,.scene.w-llovizna,.scene.w-tormenta,.scene.w-neblina{--sun:transparent;--star:transparent;--cloud:light-dark(#e3e8ee,#76829e);--cloud2:light-dark(#c4ccd6,#56627c)}
+.scene.w-parcial{--cloud2:light-dark(#cfdbe6,#5f6e92)}
+.scene .drop{animation:fall linear infinite}
+@keyframes fall{from{transform:translate(0,0)}to{transform:translate(-8px,200px)}}
+.scene .flash{opacity:0;animation:flash 7s steps(1) infinite}
+@keyframes flash{0%,88%,92%,100%{opacity:0}89%,91%{opacity:.55}}
+.scene .fogband{animation:fogdrift 18s ease-in-out infinite alternate}
+@keyframes fogdrift{from{transform:translateX(-20px)}to{transform:translateX(20px)}}
+.scene .blinkl{animation:blink 1.6s steps(2) infinite}
+.scene .burst{animation:burst 2.8s ease-out infinite;opacity:0}
+@keyframes burst{0%{transform:scale(.2);opacity:0}10%{opacity:1}60%{transform:scale(1);opacity:1}100%{transform:scale(1.15);opacity:0}}
+.scene .swing{animation:swing 3s ease-in-out infinite alternate}
+@keyframes swing{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}
+.scene .wave{animation:wave 1.4s steps(2) infinite}
+@keyframes wave{50%{transform:skewY(4deg)}}
+.scene .confe{animation:fall linear infinite}
+.skyline{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:center;background:rgba(29,35,33,.55);color:#fff;border-radius:12px;padding:8px 12px;text-align:center}
+.skyline b{font-size:10px;font-weight:400;color:#ffcb05}.skyline span{font-size:13px}
 .typo{margin:4px 0 8px;font-size:15px;color:var(--ink)}.typo b:first-child{color:#e3350d;font-family:'Press Start 2P',monospace;font-size:11px;margin-right:4px}
 </style>
 </head>
