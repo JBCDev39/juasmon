@@ -9,7 +9,7 @@ import { connectCloud } from './nube.js';
 import { createMinis } from './minis.js';
 import { createCasino } from './casino.js';
 import { createOnline } from './online.js';
-import { createSky, weatherLayer, holidayLayer, WEATHER_LABEL } from './cielo.js';
+import { createSky, weatherLayer, holidayLayer } from './cielo.js';
 import { createMusic } from './musica.js';
 
 {
@@ -42,7 +42,7 @@ const RANKS = [[0, 'Novato'], [25, 'Entrenador'], [75, 'Líder de gimnasio'], [1
 const rankOf = xp => { let r = RANKS[0]; for (const x of RANKS) if (xp >= x[0]) r = x; const i = RANKS.indexOf(r); return { name: r[1], next: RANKS[i + 1] || null, i }; };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
-const APP_VERSION = 12;
+const APP_VERSION = 13;
 const FLAG_REASONS = ['La respuesta está mal', 'La pregunta no tiene sentido o es confusa', 'Un nombre o dato está mal escrito', 'Es demasiado fácil o difícil', 'Otro'];
 const FLAG_SVG = '<svg class="flagico" viewBox="0 0 10 12" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="0" width="1" height="12" fill="currentColor"/><rect x="2" y="1" width="6" height="1" fill="var(--red)"/><rect x="2" y="2" width="7" height="3" fill="var(--red)"/><rect x="2" y="5" width="5" height="1" fill="var(--red)"/></svg>';
 const store = {
@@ -697,11 +697,10 @@ function titleView() {
     <div class="press"><b>Presione START</b><span class="px">${TOUCH ? 'Toque la pantalla' : 'Presione Enter'}</span></div></div>`;
 }
 
+// Solo en fechas especiales: un mensaje arriba de la tarjeta.
 function skyLine() {
-  const sk = SKY.state();
-  const wx = sk.live ? `San José: ${WEATHER_LABEL[sk.weather]}${sk.night ? ', de noche' : ''}` : '';
-  if (!sk.holiday && !wx) return '';
-  return `<div class="skyline">${sk.holiday ? `<b class="px">${esc(sk.holiday.label)}</b>` : ''}${wx ? `<span>${wx}</span>` : ''}</div>`;
+  const h = SKY.state().holiday;
+  return h ? `<div class="skyline"><b class="px">${esc(h.label)}</b></div>` : '';
 }
 function tile(act, title, desc, icon, color, i, badgeTxt = '') {
   return `<button class="tile" data-act="${act}" style="--cc:${color};--i:${i}"><span class="ico">${pixSvg(PIX[icon], '#1d2321')}</span><span class="tt"><b>${title}</b><span>${desc}</span></span>${badgeTxt ? `<span class="nbadge px">${badgeTxt}</span>` : ''}</button>`;
@@ -1098,6 +1097,14 @@ function verdict() {
     const miss = lineFor(MISS_LINES, state.seed, state.ri * 97 + state.qi);
     const t = r.bet.delta > 0 ? `¡Todo o nada! +${r.bet.delta}` : r.bet.delta < 0 ? `${miss} −${-r.bet.delta}` : r.correct || r.partial ? '¡Casi! Se queda igual.' : `${miss} No apostó nada.`;
     return `<p class="verdict px ${r.bet.delta > 0 ? 'ok' : r.bet.delta < 0 ? 'bad' : 'mid'}" data-tw="${esc(t)}">${esc(t)}</p>`;
+  }
+  // Tercer fallo seguido (y cada tres más): «¡Póngase las pilas!»
+  const me = state.online ? state.online.me : E.currentPlayer(state);
+  let run = 0;
+  for (const l of state.log.filter(l => l.player === me && !l.extra).reverse()) { if (l.points > 0) break; run++; }
+  if (!r.correct && !r.partial && run >= 3 && run % 3 === 0 && state.lives !== 0) {
+    const t = '¡Póngase las pilas!';
+    return `<p class="verdict px bad" data-tw="${esc(t)}">${esc(t)}</p>`;
   }
   const txt = r.timeout ? '¡Se acabó el tiempo!' : r.correct ? (r.streak >= 3 ? `¡Va con todo! +${fmtPts(r.points)}` : `¡JUAS! +${fmtPts(r.points)}`) : r.partial ? `¡Casi! +${fmtPts(r.points)}` : state.lives === 0 ? `${lineFor(MISS_LINES, state.seed, state.ri * 97 + state.qi)} Sin vidas.` : lineFor(MISS_LINES, state.seed, state.ri * 97 + state.qi);
   return `<p class="verdict px ${r.correct ? 'ok' : r.partial ? 'mid' : 'bad'}" data-tw="${esc(txt)}">${esc(txt)}</p>`;
