@@ -33,7 +33,8 @@ export function crNow() {
 export function holidayFor(date) {
   const [, m, d] = date.split('-').map(Number);
   if ((m === 12 && d === 31) || (m === 1 && d === 1)) return { id: 'anonuevo', label: '¡Feliz Año Nuevo!' };
-  if ((m === 12 && d <= 30) || (m === 1 && d <= 6)) return { id: 'navidad', label: m === 12 && d >= 24 ? '¡Feliz Navidad!' : '¡Ya huele a tamal! Feliz época navideña' };
+  // Época navideña tica: del 15 de noviembre al Día de Reyes. El mensaje solo el 24 y 25.
+  if ((m === 11 && d >= 15) || (m === 12 && d <= 30) || (m === 1 && d <= 6)) return { id: 'navidad', label: m === 12 && (d === 24 || d === 25) ? '¡Feliz Navidad!' : null };
   if (m === 2 && d === 27) return { id: 'pokemon', label: '¡Feliz Día de Pokémon!' };
   if (m === 9 && d <= 15) return { id: 'patria', label: d === 15 ? '¡Feliz 15 de setiembre!' : d === 14 ? '¡Hoy es el desfile de faroles!' : 'Mes de la Patria' };
   if (m === 8 && d === 15) return { id: 'madre', label: '¡Feliz Día de la Madre!' };

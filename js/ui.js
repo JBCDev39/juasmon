@@ -42,7 +42,7 @@ const RANKS = [[0, 'Novato'], [25, 'Entrenador'], [75, 'Líder de gimnasio'], [1
 const rankOf = xp => { let r = RANKS[0]; for (const x of RANKS) if (xp >= x[0]) r = x; const i = RANKS.indexOf(r); return { name: r[1], next: RANKS[i + 1] || null, i }; };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
-const APP_VERSION = 13;
+const APP_VERSION = 14;
 const FLAG_REASONS = ['La respuesta está mal', 'La pregunta no tiene sentido o es confusa', 'Un nombre o dato está mal escrito', 'Es demasiado fácil o difícil', 'Otro'];
 const FLAG_SVG = '<svg class="flagico" viewBox="0 0 10 12" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="0" width="1" height="12" fill="currentColor"/><rect x="2" y="1" width="6" height="1" fill="var(--red)"/><rect x="2" y="2" width="7" height="3" fill="var(--red)"/><rect x="2" y="5" width="5" height="1" fill="var(--red)"/></svg>';
 const store = {
@@ -700,7 +700,7 @@ function titleView() {
 // Solo en fechas especiales: un mensaje arriba de la tarjeta.
 function skyLine() {
   const h = SKY.state().holiday;
-  return h ? `<div class="skyline"><b class="px">${esc(h.label)}</b></div>` : '';
+  return h?.label ? `<div class="skyline"><b class="px">${esc(h.label)}</b></div>` : '';
 }
 function tile(act, title, desc, icon, color, i, badgeTxt = '') {
   return `<button class="tile" data-act="${act}" style="--cc:${color};--i:${i}"><span class="ico">${pixSvg(PIX[icon], '#1d2321')}</span><span class="tt"><b>${title}</b><span>${desc}</span></span>${badgeTxt ? `<span class="nbadge px">${badgeTxt}</span>` : ''}</button>`;
