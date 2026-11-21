@@ -48,6 +48,8 @@ const freq = m => 440 * Math.pow(2, (m - 69) / 12);
 export function createMusic(Sound, store) {
   let on = store.load('pt-music', true);
   let track = null, step = 0, nextAt = 0, timer = null, master = null, noise = null;
+  // 0 normal · 1 quedan ~10 s · 2 quedan ~5 s: más rápido, más percusión y más agudo.
+  let level = 0;
 
   function ensure() {
     const ac = Sound.ensure();
@@ -78,13 +80,14 @@ export function createMusic(Sound, store) {
   function schedule() {
     const ac = Sound.ac;
     if (!ac || !track) return;
-    const t = TRACKS[track], len = 60 / t.bpm / 2;
+    const t = TRACKS[track];
     while (nextAt < ac.currentTime + 0.25) {
+      const len = 60 / (t.bpm * [1, 1.14, 1.3][level]) / 2, up = level === 2 ? 2 : 0;
       const i = step % t.lead.length, b = step % 8;
-      if (t.lead[i] !== null) note(ac, freq(t.lead[i]), nextAt, len * 0.9, 'square', t.leadVol);
-      if (t.bass[i] !== null) note(ac, freq(t.bass[i]), nextAt, len * 0.95, 'triangle', t.bassVol);
-      if (t.hat[b]) hit(ac, nextAt, 0.012, true);
-      if (t.kick[b]) hit(ac, nextAt, 0.05, false);
+      if (t.lead[i] !== null) note(ac, freq(t.lead[i] + up), nextAt, len * 0.9, 'square', t.leadVol * (level ? 1.15 : 1));
+      if (t.bass[i] !== null) note(ac, freq(t.bass[i] + up), nextAt, len * 0.95, 'triangle', t.bassVol);
+      if (t.hat[b] || level) hit(ac, nextAt, level ? 0.016 : 0.012, true);
+      if (t.kick[b] || (level === 2 && b % 2 === 0)) hit(ac, nextAt, 0.05, false);
       nextAt += len; step++;
     }
   }
@@ -104,5 +107,6 @@ export function createMusic(Sound, store) {
     toggle() { on = !on; store.save('pt-music', on); if (!on) stop(); },
     setOn(v) { on = !!v; store.save('pt-music', on); if (!on) stop(); },
     play, stop,
+    setIntensity(v) { level = v; },
   };
 }

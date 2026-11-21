@@ -42,7 +42,7 @@ const RANKS = [[0, 'Novato'], [25, 'Entrenador'], [75, 'Líder de gimnasio'], [1
 const rankOf = xp => { let r = RANKS[0]; for (const x of RANKS) if (xp >= x[0]) r = x; const i = RANKS.indexOf(r); return { name: r[1], next: RANKS[i + 1] || null, i }; };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
-const APP_VERSION = 18;
+const APP_VERSION = 19;
 const FLAG_REASONS = ['La respuesta está mal', 'La pregunta no tiene sentido o es confusa', 'Un nombre o dato está mal escrito', 'Es demasiado fácil o difícil', 'Otro'];
 const FLAG_SVG = '<svg class="flagico" viewBox="0 0 10 12" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="0" width="1" height="12" fill="currentColor"/><rect x="2" y="1" width="6" height="1" fill="var(--red)"/><rect x="2" y="2" width="7" height="3" fill="var(--red)"/><rect x="2" y="5" width="5" height="1" fill="var(--red)"/></svg>';
 const store = {
@@ -738,16 +738,20 @@ function menuView() {
     cont = `<button class="contbtn" data-act="continue">${pixSvg(PIX.play, '#1d2321')}<span><b class="px">Continuar partida</b><span>${what}${who}</span></span></button>`;
   }
   const me = myName(), xp = records.xp[me] || 0, rk = rankOf(xp);
+  // ¿Subió de rango desde la última vez que vio la tarjeta? Entonces la tarjeta lo celebra una sola vez.
+  const seenRanks = store.load('pt-seen-rank', {}), seen = seenRanks[me];
+  const lvUp = seen !== undefined && rk.i > seen && F.newScreen ? RANKS[seen][1] : null;
+  if (seen === undefined || rk.i < seen) { seenRanks[me] = rk.i; store.save('pt-seen-rank', seenRanks); }
   const pct = rk.next ? Math.round((xp - RANKS[rk.i][0]) / (rk.next[0] - RANKS[rk.i][0]) * 100) : 100;
   const medals = myMedals().size, total = MEDALS.filter(m => !m.soon).length;
   const pend = pendingToday();
   return `<div class="home">
     <div class="topbar"><button class="mini-wm" data-act="title"><b>JUAS</b><i>mon</i></button><div class="tools">${reportsBtn()}${soundBtn()}</div></div>
     ${skyLine()}
-    <button class="tcard" data-act="profile" aria-label="Mi perfil: ${esc(me)}">
+    <button class="tcard" data-act="profile" aria-label="Mi perfil: ${esc(me)}" ${lvUp ? `data-levelup="${esc(rk.name)}" data-rank="${rk.i}"` : ''}>${lvUp ? '<span class="lvtag px keep" aria-hidden="true">¡Subió de nivel!</span>' : ''}
       <span class="trow">${avatar(profile, 'big keep idlebob')}<span class="tinfo">
-        <span class="tname"><b class="px">${esc(me)}</b><span class="rk">${rk.name}</span></span>
-        <span class="xpbar"><i style="width:${F.newScreen ? 0 : pct}%" data-fill="${pct}"></i></span>
+        <span class="tname"><b class="px">${esc(me)}</b><span class="rk">${lvUp ? esc(lvUp) : rk.name}</span></span>
+        <span class="xpbar"><i style="width:${F.newScreen ? 0 : pct}%" ${lvUp ? `data-lvfill="${pct}"` : `data-fill="${pct}"`}></i></span>
         <span class="hint">${fmtPts(xp)} XP${rk.next ? ` · faltan ${fmtPts(rk.next[0] - xp)} para ${rk.next[1]}` : ' · ¡rango máximo!'}</span>
       </span></span>
       <span class="stats3">
@@ -1601,15 +1605,16 @@ function syncClock() {
   tick();
 }
 function tick() {
-  if (clock.paused || !state) { setHurry(false); return; }
+  if (clock.paused || !state) { tickLevel = 0; setHurry(false); return; }
   const now = Date.now();
-  let hurry = false;
+  let hurry = false, minLeft = Infinity;
   if (clock.qEnd) {
     const left = Math.max(0, clock.qEnd - now), pct = left / (clock.qDur || 1) * 100;
     const bar = document.getElementById('tbar'), txt = document.getElementById('tleft');
     if (bar) { bar.style.setProperty('--w', pct + '%'); bar.style.setProperty('--hc', pct > 50 ? 'var(--ok)' : pct > 20 ? 'var(--yellow)' : 'var(--bad)'); }
     const sec = Math.ceil(left / 1000);
     if (txt) txt.textContent = sec;
+    minLeft = Math.min(minLeft, left);
     if (sec <= 5 && sec > 0 && sec !== clock.lastSec) Sound.play('tick');
     if (sec <= 5 && sec > 0) hurry = true;
     clock.lastSec = sec;
@@ -1627,6 +1632,7 @@ function tick() {
     const bar = document.getElementById('tabar'), txt = document.getElementById('tatext');
     if (bar) { bar.style.setProperty('--w', left / total * 100 + '%'); bar.style.setProperty('--hc', left > total / 2 ? '#6fe08e' : left > total / 5 ? 'var(--yellow)' : '#ff8a8a'); }
     if (txt) txt.textContent = fmtClock(left);
+    minLeft = Math.min(minLeft, left);
     const sec = Math.ceil(left / 1000);
     if (sec <= 5 && sec > 0 && sec !== clock.lastTSec) Sound.play('tick');
     if (sec <= 5 && sec > 0) hurry = true;
@@ -1639,13 +1645,17 @@ function tick() {
     if (bar) { bar.style.setProperty('--w', left / total * 100 + '%'); bar.style.setProperty('--hc', left > total / 2 ? '#6fe08e' : left > total / 5 ? 'var(--yellow)' : '#ff8a8a'); }
     if (txt) txt.textContent = fmtClock(left);
     const t2 = document.getElementById('rtext2'); if (t2) t2.textContent = fmtClock(left);
+    minLeft = Math.min(minLeft, left);
     const sec = Math.ceil(left / 1000);
     if (sec <= 5 && sec > 0 && sec !== clock.lastRSec) Sound.play('tick');
     if (sec <= 5 && sec > 0) hurry = true;
     clock.lastRSec = sec;
     if (left <= 0) { clock.rStart = 0; dispatch({ type: 'ROSCO_TIME', player: state.rosco.turn }); }
   }
+  // La música se va poniendo intensa: a los 10 segundos acelera, a los 5 acelera más y sube de tono.
+  tickLevel = minLeft > 0 && minLeft <= 5000 ? 2 : minLeft > 0 && minLeft <= 10000 ? 1 : 0;
   setHurry(hurry);
+  applyIntensity();
 }
 
 // Conecta el deslizador y el número de la Estimación.
@@ -1732,7 +1742,31 @@ function countUp() {
 }
 
 // ---------- animaciones para que todo se sienta vivo ----------
+function levelUpCard(card) {
+  const me = myName(), seenRanks = store.load('pt-seen-rank', {});
+  seenRanks[me] = +card.dataset.rank; store.save('pt-seen-rank', seenRanks);
+  const bar = card.querySelector('[data-lvfill]'), rk = card.querySelector('.rk'), av = card.querySelector('.avatar'), tag = card.querySelector('.lvtag');
+  const pct = +bar.dataset.lvfill, name = card.dataset.levelup;
+  if (reduced) { rk.textContent = name; bar.style.width = pct + '%'; tag?.classList.add('on'); setTimeout(() => tag?.remove(), 3000); return; }
+  const later = (ms, fn) => setTimeout(() => { if (card.isConnected) fn(); }, ms);
+  // 1) la barra se llena hasta el tope
+  requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = '100%'; }));
+  // 2) brilla, el rango se voltea al nuevo, chispitas y brinquito
+  later(950, () => {
+    bar.classList.add('lvflash', 'keep'); card.classList.add('lvglow', 'keep');
+    rk.classList.add('rkflip', 'keep'); later(220, () => { rk.textContent = name; });
+    av?.classList.remove('idlebob'); av?.classList.add('lvhop', 'keep');
+    tag?.classList.add('on');
+    sparkle(card); Sound.play('rankup');
+  });
+  // 3) la barra arranca de cero en el rango nuevo
+  later(1700, () => { bar.style.transition = 'none'; bar.style.width = '0%'; bar.offsetWidth; bar.style.transition = ''; bar.style.width = pct + '%'; });
+  later(3600, () => { tag?.classList.remove('on'); av?.classList.remove('lvhop'); av?.classList.add('idlebob'); card.classList.remove('lvglow'); });
+  later(4200, () => tag?.remove());
+}
 function lively() {
+  const lv = $app.querySelector('[data-levelup]');
+  if (lv) levelUpCard(lv);
   // Barra de XP que se llena al entrar
   $app.querySelectorAll('[data-fill]').forEach(el => requestAnimationFrame(() => requestAnimationFrame(() => { el.style.width = el.dataset.fill + '%'; })));
   // Colones que suben o bajan contando
@@ -1825,10 +1859,12 @@ window.addEventListener('scroll', () => {
   });
 }, { passive: true });
 // «¡Pellízquese!»: aparece en los últimos 5 segundos de cualquier reloj.
-let hurryOn = false;
+let hurryOn = false, tickLevel = 0;
+const applyIntensity = () => MUSIC.setIntensity(Math.max(tickLevel, hurryOn ? 2 : 0));
 function setHurry(on) {
   if (on === hurryOn) return;
   hurryOn = on;
+  applyIntensity();
   let el = document.getElementById('hurry');
   if (!el) { el = document.createElement('div'); el.id = 'hurry'; el.className = 'hurry px'; el.textContent = '¡Pellízquese!'; el.setAttribute('aria-live', 'polite'); document.body.appendChild(el); }
   el.classList.toggle('on', on);
