@@ -1,5 +1,5 @@
 // ============================================================
-//  CASINO AZULONA: juegos con fichas del juego (no hay plata de verdad).
+//  CASINO AZULONA: juegos con colones del juego (no hay plata de verdad).
 //  Pokémon 21, Carta alta, Doble o nada y la Raspadita diaria.
 // ============================================================
 export function createCasino(api) {
@@ -13,7 +13,7 @@ export function createCasino(api) {
   const randMon = (avoid = []) => { const list = ctx().pokemon; let p; do { p = list[Math.floor(Math.random() * list.length)]; } while (avoid.includes(p.id)); return p; };
   const randStat = () => STATS[Math.floor(Math.random() * STATS.length)];
   const COIN = '<svg class="coin" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><path d="M3 0h4v1h2v2h1v4h-1v2h-2v1h-4v-1h-2v-2h-1v-4h1v-2h2z" fill="#d4a300"/><path d="M3 1h4v1h1v1h1v4h-1v1h-1v1h-4v-1h-1v-1h-1v-4h1v-1h1z" fill="#ffcb05"/><path d="M4 3h2v4h-2z" fill="#b8860b"/></svg>';
-  const chipLine = () => `<div class="chipbar">${COIN}<b class="px">${chips()}</b><span class="hint">fichas</span></div>`;
+  const chipLine = () => `<div class="chipbar">${COIN}<b class="px" data-count="${chips()}">₡${chips()}</b></div>`;
   const pay = n => { api.addFichas(n); };
   const take = n => { api.addFichas(-n); };
   function betPicker() {
@@ -21,13 +21,16 @@ export function createCasino(api) {
     const opts = [5, 10, 25, 50, 100].filter(n => n <= have);
     if (have && !opts.includes(have)) opts.push(have);
     if (bet > have) bet = Math.min(10, have);
-    if (!opts.length) return '<p class="hint">Se quedó sin fichas. Raspe la raspadita del día o juegue otros modos para ganar más.</p>';
-    return `<span class="l px">Apuesta</span><div class="togs">${opts.map(n => api.tog('cas-bet', n, bet === n, n === have && n > 100 ? `Todo (${n})` : n === have ? `Todo (${n})` : n)).join('')}</div>`;
+    if (!opts.length) return '<p class="hint">Se quedó sin harina. Raspe la raspadita del día o juegue otros modos para ganar más.</p>';
+    return `<span class="l px">Apuesta</span><div class="togs">${opts.map(n => api.tog('cas-bet', n, bet === n, n === have ? `Todo (₡${n})` : `₡${n}`)).join('')}</div>`;
   }
   const head = title => `${api.screenHead(title, title === 'Casino Azulona' ? 'menu' : 'casino')}<main class="${api.F().newScreen ? 'enter' : ''} casino">`;
-  const card = (p, val, label, hidden = false) => hidden
-    ? `<div class="pcard back"><span class="px">?</span></div>`
-    : `<div class="pcard"><span class="pname">${esc(p.name)}</span>${val !== null ? `<span class="pval px">${val}</span>` : '<span class="pval px">?</span>'}</div>`;
+  let seen = new Set();
+  const flipCls = key => { if (!key || seen.has(key)) return ''; seen.add(key); return ' flip keep'; };
+  const card = (p, val, label, hidden = false, key = null) => hidden
+    ? `<div class="pcard back${flipCls(key && key + 'b')}"><span class="px">?</span></div>`
+    : `<div class="pcard${flipCls(key && `${key}${val ?? ''}`)}"><span class="pname">${esc(p.name)}</span>${val !== null ? `<span class="pval px">${val}</span>` : '<span class="pval px">?</span>'}</div>`;
+  const won = (win, stake) => { if (win > stake) api.coinRain(); };
   // Lado de la mesa: nombre, total grande, barrita hacia 300 y las cartas en fila.
   const side = (who, cards, total, shown, cls = '') => {
     const pct = Math.min(100, total / TARGET * 100), over = total > TARGET;
@@ -42,12 +45,12 @@ export function createCasino(api) {
     const done = s.date === today && s.claimed;
     return `${head('Casino Azulona')}
       ${chipLine()}
-      <p class="hint">Las fichas se ganan jugando: 1 por acierto, más extras por récords y retos. Aquí solo se juega con fichas, nunca con plata de verdad.</p>
+      <p class="hint">Los colones se ganan jugando: ₡1 por acierto, más extras por récords y retos. Son colones del juego, nunca plata de verdad.</p>
       <div class="casgrid">
         ${tile('cas-open', '21', 'Pokémon 21', 'Sume una estadística sin pasarse de 300.', '#2e9e4f')}
         ${tile('cas-open', 'alta', 'Carta alta', 'Su Pokémon contra el de la casa. ¿Qué estadística saldrá?', '#2f6fdb')}
         ${tile('cas-open', 'doble', 'Doble o nada', '¿Más o menos? Cada acierto duplica. Retírese a tiempo.', '#e3350d')}
-        ${tile('cas-open', 'rasca', 'Raspadita diaria', done ? `Hoy ya ganó ${s.prize} fichas. Vuelva mañana.` : '¡Una gratis cada día!', '#e8a500', done ? '' : 'GRATIS')}
+        ${tile('cas-open', 'rasca', 'Raspadita diaria', done ? `Hoy ya ganó ₡${s.prize}. Vuelva mañana.` : '¡Una gratis cada día!', '#e8a500', done ? '' : 'GRATIS')}
       </div></main>`;
   }
   const tile = (a, v, t, d, c, badge = '') => `<button class="castile" data-act="${a}" data-val="${v}" style="--cc:${c}"><b class="px">${t}</b><span>${d}</span>${badge ? `<span class="nbadge px">${badge}</span>` : ''}</button>`;
@@ -61,6 +64,7 @@ export function createCasino(api) {
     take(bet);
     const [label, idx] = randStat(), used = [];
     const draw = () => { const p = randMon(used); used.push(p.id); return { p, val: p.stats[idx] }; };
+    seen = new Set();
     g = { game: '21', phase: 'play', label, idx, used, draw, bet, me: [draw(), draw()], house: [draw(), draw()], shown: 1 };
     if (sum(g.me) >= TARGET) stand21(); else api.render();
   }
@@ -88,7 +92,7 @@ export function createCasino(api) {
     pay(win);
     g.phase = 'end'; g.res = res; g.win = win; g.shown = g.house.length;
     api.Sound.play(win > g.bet ? 'juas' : win === g.bet ? 'ok' : 'over');
-    api.render();
+    api.render(); won(win, g.bet);
   }
   function view21() {
     const top = `${head('Pokémon 21')}${chipLine()}`;
@@ -96,13 +100,13 @@ export function createCasino(api) {
       <p class="hint">Primero juega usted: pide cartas o se planta. Después la casa pide hasta llegar a ${HOUSE_STOP}. Si gana, cobra el doble; con ${TARGET} exacto, 2,5 veces.</p></div>
       <div class="box field">${betPicker()}<div class="row end"><button class="btn" data-act="c21-deal" ${chips() ? '' : 'disabled'}>Repartir</button></div></div></main>`;
     const hv = g.house.slice(0, g.shown), hsum = sum(hv);
-    const houseCards = g.house.map((c, i) => card(c.p, c.val, g.label, i >= g.shown)).join('');
-    const meCards = g.me.map(c => card(c.p, c.val, g.label)).join('');
+    const houseCards = g.house.map((c, i) => card(c.p, c.val, g.label, i >= g.shown, `h${i}`)).join('');
+    const meCards = g.me.map((c, i) => card(c.p, c.val, g.label, false, `m${i}`)).join('');
     const msum = sum(g.me);
-    const status = g.phase === 'play' ? 'Su turno: ¿pide otra carta o se planta?' : g.phase === 'house' ? 'La casa está jugando…' : `${g.res} ${g.win > g.bet ? `+${g.win - g.bet} fichas` : g.win === g.bet ? '' : `−${g.bet} fichas`}`;
+    const status = g.phase === 'play' ? 'Su turno: ¿pide otra carta o se planta?' : g.phase === 'house' ? 'La casa está jugando…' : `${g.res} ${g.win > g.bet ? `+₡${g.win - g.bet}` : g.win === g.bet ? '' : `−₡${g.bet}`}`;
     const cls = g.phase === 'end' ? (g.win > g.bet ? 'ok' : g.win === g.bet ? '' : 'bad') : '';
     return `${top}<div class="box table21">
-      <div class="row between"><span class="hint px catl">Se suma: ${g.label}</span><span class="hint">Apuesta: ${g.bet}</span></div>
+      <div class="row between"><span class="hint px catl">Se suma: ${g.label}</span><span class="hint">Apuesta: ₡${g.bet}</span></div>
       <p class="status21 ${cls}">${esc(status)}</p>
       ${side('Casa', houseCards, hsum, g.phase === 'play' ? `${hsum} + ?` : hsum, 'house')}
       ${side('Usted', meCards, msum, msum, 'me')}
@@ -115,6 +119,7 @@ export function createCasino(api) {
   // ---------- Carta alta ----------
   function altaDeal() {
     const me = randMon(), house = randMon([me.id]);
+    seen = new Set();
     g = { game: 'alta', phase: 'bet', me, house };
     api.render();
   }
@@ -127,19 +132,19 @@ export function createCasino(api) {
     pay(win);
     Object.assign(g, { phase: 'end', label, m, h, win, bet });
     api.Sound.play(win > bet ? 'juas' : win === bet ? 'ok' : 'over');
-    api.render();
+    api.render(); won(win, bet);
   }
   function altaView() {
     const top = `${head('Carta alta')}${chipLine()}`;
     if (g.game !== 'alta') return `${top}<div class="box"><p class="q">Le sale un Pokémon y la casa tiene otro escondido. Usted apuesta sin saber qué estadística se va a comparar.</p>
       <p class="hint">Si su Pokémon tiene más, cobra el doble. Si empatan, recupera la apuesta.</p>
       <div class="row end" style="margin-top:12px"><button class="btn" data-act="alta-deal" ${chips() ? '' : 'disabled'}>Repartir</button></div></div></main>`;
-    if (g.phase === 'bet') return `${top}<div class="box"><div class="vsrow"><div><span class="hint">Usted</span><div class="pcard"><span class="pname">${esc(g.me.name)}</span>${api.typePills(g.me)}</div></div><div class="vsmark px">vs</div><div><span class="hint">Casa</span>${card(g.house, null, '', true)}</div></div>
+    if (g.phase === 'bet') return `${top}<div class="box"><div class="vsrow"><div><span class="hint">Usted</span><div class="pcard"><span class="pname">${esc(g.me.name)}</span>${api.typePills(g.me)}</div></div><div class="vsmark px">vs</div><div><span class="hint">Casa</span>${card(g.house, null, '', true, 'ah')}</div></div>
       <p class="hint" style="margin-top:10px">Este es su Pokémon. ¿Cuánto le apuesta?</p></div>
       <div class="box field">${betPicker()}<div class="row end"><button class="btn" data-act="alta-reveal" ${chips() ? '' : 'disabled'}>Revelar</button></div></div></main>`;
     return `${top}<div class="box"><span class="hint px catl">Salió: ${g.label}</span>
-      <div class="vsrow" style="margin-top:10px"><div><span class="hint">Usted</span>${card(g.me, g.m, g.label)}</div><div class="vsmark px">vs</div><div><span class="hint">Casa</span>${card(g.house, g.h, g.label)}</div></div>
-      <p class="flash ${g.win > g.bet ? 'ok' : g.win === g.bet ? '' : 'bad'} keep">${g.win > g.bet ? `¡JUAS! +${g.win - g.bet} fichas` : g.win === g.bet ? 'Empate: recupera su apuesta.' : `Diay, no. −${g.bet} fichas`}</p>
+      <div class="vsrow" style="margin-top:10px"><div><span class="hint">Usted</span>${card(g.me, g.m, g.label, false, 'am')}</div><div class="vsmark px">vs</div><div><span class="hint">Casa</span>${card(g.house, g.h, g.label, false, 'ah')}</div></div>
+      <p class="flash ${g.win > g.bet ? 'ok' : g.win === g.bet ? '' : 'bad'} keep">${g.win > g.bet ? `¡JUAS! +₡${g.win - g.bet}` : g.win === g.bet ? 'Empate: recupera su apuesta.' : `Diay, no. −₡${g.bet}`}</p>
       <div class="row end"><button class="btn ghost" data-act="go-casino">Casino</button><button class="btn" data-act="alta-deal">Otra carta</button></div></div></main>`;
   }
 
@@ -148,6 +153,7 @@ export function createCasino(api) {
     if (bet > chips() || bet <= 0) return;
     take(bet);
     const [label, idx] = randStat(), a = randMon();
+    seen = new Set();
     g = { game: 'doble', phase: 'play', label, idx, a, b: randMon([a.id]), pot: bet, bet, streak: 0, seen: [a.id] };
     api.render();
   }
@@ -165,7 +171,7 @@ export function createCasino(api) {
     pay(g.pot);
     g.phase = 'cashed';
     api.Sound.play('juas');
-    api.render();
+    api.render(); won(g.pot, g.bet);
   }
   function dobleView() {
     const top = `${head('Doble o nada')}${chipLine()}`;
@@ -173,17 +179,17 @@ export function createCasino(api) {
       <p class="hint">Puede retirarse cuando quiera con lo ganado. Si falla, lo pierde todo. Si empatan, cuenta como acierto.</p></div>
       <div class="box field">${betPicker()}<div class="row end"><button class="btn" data-act="doble-start" ${chips() ? '' : 'disabled'}>Empezar</button></div></div></main>`;
     const va = g.a.stats[g.idx];
-    const last = g.lastB && g.phase === 'play' ? `<p class="flash ok keep">¡Bien! ${esc(g.lastB.p.name)} tenía ${g.lastB.v}. En juego: ${g.pot}</p>` : '';
+    const last = g.lastB && g.phase === 'play' ? `<p class="flash ok keep">¡Bien! ${esc(g.lastB.p.name)} tenía ${g.lastB.v}. En juego: ₡${g.pot}</p>` : '';
     if (g.phase !== 'play') {
-      const t = g.phase === 'cashed' ? `¡Se retiró con ${g.pot} fichas!` : `Diay, no. ${g.lastB.p.name} tenía ${g.lastB.v}. Perdió ${g.pot}.`;
+      const t = g.phase === 'cashed' ? `¡Se retiró con ₡${g.pot}!` : `Diay, no. ${g.lastB.p.name} tenía ${g.lastB.v}. Perdió ₡${g.pot}.`;
       return `${top}<div class="box"><p class="verdict px ${g.phase === 'cashed' ? 'ok' : 'bad'}" data-tw="${esc(t)}">${esc(t)}</p>
         <p class="hint">${api.plural(g.streak, 'acierto', 'aciertos')} seguidos con ${g.label}.</p>
         <div class="row end"><button class="btn ghost" data-act="go-casino">Casino</button><button class="btn" data-act="doble-new">Otra vez</button></div></div></main>`;
     }
-    return `${top}<div class="box"><span class="hint px catl">${g.label} · en juego ${g.pot} fichas</span>
-      <div class="vsrow" style="margin-top:10px"><div>${card(g.a, va, g.label)}</div><div class="vsmark px">?</div><div>${card(g.b, null)}</div></div>
+    return `${top}<div class="box"><span class="hint px catl">${g.label} · en juego ₡${g.pot}</span>
+      <div class="vsrow" style="margin-top:10px"><div>${card(g.a, va, g.label, false, `a${g.a.id}`)}</div><div class="vsmark px">?</div><div>${card(g.b, null, '', false, `b${g.b.id}`)}</div></div>
       ${last}<p class="q">¿${esc(g.b.name)} tiene más o menos ${g.label} que ${esc(g.a.name)}?</p>
-      <div class="row end"><button class="btn ghost" data-act="doble-cash" ${g.streak ? '' : 'disabled'}>Retirarse con ${g.pot}</button><button class="btn" data-act="doble-less">Menos</button><button class="btn" data-act="doble-more">Más</button></div></div></main>`;
+      <div class="row end"><button class="btn ghost" data-act="doble-cash" ${g.streak ? '' : 'disabled'}>Retirarse con ₡${g.pot}</button><button class="btn" data-act="doble-less">Menos</button><button class="btn" data-act="doble-more">Más</button></div></div></main>`;
   }
 
   // ---------- Raspadita diaria ----------
@@ -214,18 +220,18 @@ export function createCasino(api) {
     const cells = s.cells.map((sym, i) => s.open[i]
       ? `<div class="rcell open ${s.win === sym ? 'win' : ''}">${api.pixSvg(api.AV_ICONS[sym], '#1d2321')}</div>`
       : `<button class="rcell" data-act="rasca" data-val="${i}" aria-label="Raspar casilla ${i + 1}"><span class="px">?</span></button>`).join('');
-    const msg = all ? (s.win ? `¡Tres ${s.win === 'corona' ? 'coronas, premio gordo' : s.win}! +${s.prize} fichas` : `Esta vez no hubo tres iguales. Le dejamos ${s.prize} fichas de consuelo.`) : 'Toque las casillas para rasparlas. Tres iguales ganan.';
+    const msg = all ? (s.win ? `¡Tres ${s.win === 'corona' ? 'coronas, premio gordo' : s.win}! +₡${s.prize}` : `Esta vez no hubo tres iguales. Le dejamos ₡${s.prize} de consuelo.`) : 'Toque las casillas para rasparlas. Tres iguales ganan.';
     return `${head('Raspadita diaria')}${chipLine()}
       <div class="box"><div class="rgrid">${cells}</div>
       <p class="${all ? `flash ${s.win ? 'ok' : ''} keep` : 'hint'}" style="margin-top:12px">${esc(msg)}</p>
-      <p class="hint">Premios: 👑 200 · ⭐ 50 · ⚡ 30 · 🔥 20 · 💧 10.</p>
+      <p class="hint">Premios: 👑 ₡200 · ⭐ ₡50 · ⚡ ₡30 · 🔥 ₡20 · 💧 ₡10.</p>
       <div class="row end">${all ? '<button class="btn" data-act="go-casino">Ir al casino</button>' : '<button class="btn ghost" data-act="rasca-all">Raspar todo</button>'}</div></div></main>`;
   }
   function rascar(i) {
     const s = scratchState();
     if (s.date !== api.crDate() || s.claimed) return;
     if (i === 'all') s.open = s.open.map(() => true); else s.open[+i] = true;
-    if (s.open.every(Boolean) && !s.claimed) { s.claimed = true; pay(s.prize); api.Sound.play(s.win ? 'rankup' : 'ok'); }
+    if (s.open.every(Boolean) && !s.claimed) { s.claimed = true; pay(s.prize); api.Sound.play(s.win ? 'rankup' : 'ok'); if (s.win) setTimeout(() => api.coinRain(), 50); }
     else api.Sound.play('select');
     store.save('pt-rasca', s);
     api.render();

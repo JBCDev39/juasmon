@@ -93,7 +93,7 @@ export function createMinis(api) {
     t.rec.done = t.rec.won || t.rec.guesses.length >= PD_MAX;
     const all = pdAll(); all[t.date] = t.rec; store.save('pt-pokedle', all);
     if (t.rec.done) {
-      if (t.rec.won) { api.Sound.play('juas'); const f = api.addFichas(10); api.toast(`+${f} fichas para el casino`); } else api.Sound.play('wrong');
+      if (t.rec.won) { api.Sound.play('juas'); const f = api.addFichas(10); api.toast(`+₡${f} para el casino`); } else api.Sound.play('wrong');
     } else api.Sound.play('wrong');
     api.render();
     setTimeout(() => document.getElementById('typed')?.focus(), 30);
@@ -142,7 +142,7 @@ export function createMinis(api) {
     if (st.phase === 'end') {
       const title = st.rec.isNew ? `¡Nuevo récord! ${st.score}` : `${st.score} ${st.score === 1 ? 'acierto' : 'aciertos'}`;
       return `${head}<main class="enter"><div class="box"><p class="big px" data-tw="${esc(title)}">${esc(title)}</p>
-        <p class="hint">${st.miss ? `${api.plural(st.miss, 'fallo', 'fallos')}. ` : ''}${st.rec.prev !== null && !st.rec.isNew ? `Su récord sigue siendo ${st.rec.prev}.` : ''}${st.fichas ? ` +${st.fichas} fichas para el casino.` : ''}</p>
+        <p class="hint">${st.miss ? `${api.plural(st.miss, 'fallo', 'fallos')}. ` : ''}${st.rec.prev !== null && !st.rec.isNew ? `Su récord sigue siendo ${st.rec.prev}.` : ''}${st.fichas ? ` +₡${st.fichas} para el casino.` : ''}</p>
         <div class="row end" style="margin-top:12px"><button class="btn ghost" data-act="go-modos">Más modos</button><button class="btn" data-act="tvt-start" id="nextbtn">Otra vez</button></div></div></main>`;
     }
     const q = st.q, left = st.end - Date.now();
@@ -239,7 +239,7 @@ export function createMinis(api) {
       const title = st.won ? '¡Le ganó a la app!' : 'Diay, se quedó pegado';
       return `${head}<main class="enter"><div class="box"><p class="big px" data-tw="${esc(title)}">${esc(title)}</p>
         <p class="q">${esc(st.why)} ${api.plural(st.mine, 'Pokémon suyo', 'Pokémon suyos')} en la cadena.</p>
-        <p class="hint">${st.rec.isNew ? '¡Nuevo récord!' : st.rec.prev !== null ? `Su récord: ${st.rec.prev}.` : ''}${st.fichas ? ` +${st.fichas} fichas para el casino.` : ''}</p>
+        <p class="hint">${st.rec.isNew ? '¡Nuevo récord!' : st.rec.prev !== null ? `Su récord: ${st.rec.prev}.` : ''}${st.fichas ? ` +₡${st.fichas} para el casino.` : ''}</p>
         <div class="chips cadchips" style="margin-top:10px">${chips}</div>
         <div class="row end" style="margin-top:12px"><button class="btn ghost" data-act="go-modos">Más modos</button><button class="btn" data-act="cad-start" id="nextbtn">Otra vez</button></div></div></main>`;
     }
@@ -302,7 +302,7 @@ export function createMinis(api) {
     let segs = '';
     for (let i = 0; i < 6; i++) segs += `<rect x="${24 + i * 6}" y="${10 - (i % 2) * 2}" width="6" height="2" fill="${i < left ? '#8a6a3a' : 'transparent'}"/>`;
     const spark = left > 0 ? `<rect x="${22 + left * 6}" y="4" width="4" height="4" fill="#ffcb05"/><rect x="${24 + left * 6}" y="2" width="2" height="2" fill="#e3350d"/>` : '';
-    return `<svg class="fuse" viewBox="0 0 64 40" shape-rendering="crispEdges" aria-hidden="true">${segs}${spark}
+    return `<svg class="ahfuse" viewBox="0 0 64 40" shape-rendering="crispEdges" aria-hidden="true">${segs}${spark}
       <rect x="6" y="14" width="16" height="22" fill="#1d2321"/><rect x="2" y="18" width="24" height="14" fill="#1d2321"/><rect x="14" y="10" width="6" height="6" fill="#1d2321"/><rect x="8" y="18" width="4" height="4" fill="#fff" opacity=".6"/></svg>`;
   }
   function ahorcadoView() {
@@ -319,7 +319,7 @@ export function createMinis(api) {
       return `<button class="ahk ${used ? (hit ? 'hit' : 'no') : ''}" data-act="ah-key" data-val="${L}" ${used || st.phase !== 'play' ? 'disabled' : ''}>${L}</button>`;
     }).join('');
     let foot = '';
-    if (st.phase === 'won') foot = `<p class="flash ok keep">¡JUAS! Era ${esc(st.word)}. +${st.fichas} fichas</p><div class="row end"><button class="btn" data-act="ah-next" id="nextbtn">Siguiente palabra</button></div>`;
+    if (st.phase === 'won') foot = `<p class="flash ok keep">¡JUAS! Era ${esc(st.word)}. +₡${st.fichas}</p><div class="row end"><button class="btn" data-act="ah-next" id="nextbtn">Siguiente palabra</button></div>`;
     if (st.phase === 'lost') foot = `<p class="flash bad keep">¡Se despichó tere! Era ${esc(st.word)}.</p><p class="hint">${api.plural(st.words, 'palabra seguida', 'palabras seguidas')}. ${st.rec.isNew ? '¡Nuevo récord!' : st.rec.prev !== null ? `Su récord: ${st.rec.prev}.` : ''}</p>
       <div class="row end"><button class="btn ghost" data-act="go-modos">Más modos</button><button class="btn" data-act="ah-start" id="nextbtn">Otra vez</button></div>`;
     return `${head}<main>

@@ -9,7 +9,7 @@ import { connectCloud } from './nube.js';
 import { createMinis } from './minis.js';
 import { createCasino } from './casino.js';
 import { createOnline } from './online.js';
-import { createSky, weatherLayer, holidayLayer } from './cielo.js';
+import { createSky, weatherLayer, holidayLayer, volcanoLayer, faunaLayer } from './cielo.js';
 import { createMusic } from './musica.js';
 
 {
@@ -42,7 +42,7 @@ const RANKS = [[0, 'Novato'], [25, 'Entrenador'], [75, 'Líder de gimnasio'], [1
 const rankOf = xp => { let r = RANKS[0]; for (const x of RANKS) if (xp >= x[0]) r = x; const i = RANKS.indexOf(r); return { name: r[1], next: RANKS[i + 1] || null, i }; };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
-const APP_VERSION = 14;
+const APP_VERSION = 15;
 const FLAG_REASONS = ['La respuesta está mal', 'La pregunta no tiene sentido o es confusa', 'Un nombre o dato está mal escrito', 'Es demasiado fácil o difícil', 'Otro'];
 const FLAG_SVG = '<svg class="flagico" viewBox="0 0 10 12" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="0" width="1" height="12" fill="currentColor"/><rect x="2" y="1" width="6" height="1" fill="var(--red)"/><rect x="2" y="2" width="7" height="3" fill="var(--red)"/><rect x="2" y="5" width="5" height="1" fill="var(--red)"/></svg>';
 const store = {
@@ -335,14 +335,16 @@ function scene() {
     for (let x = 0; x <= W; x += step) { const y = Math.round(base - amp * (Math.sin(x * f1 + base) * .6 + Math.sin(x * f2 + base * 2) * .4)); d += ` L${x} ${y} L${x + step} ${y}`; }
     return `<path d="${d} L${W} ${H} Z" fill="${fill}"/>`;
   };
-  out += hills(112, 16, 8, 'var(--h1)', 0.021, 0.047) + hills(128, 12, 6, 'var(--h2)', 0.031, 0.013) + hills(144, 8, 4, 'var(--h3)', 0.045, 0.02);
+  // El volcán va detrás de las colinas; cada capa de colinas se mueve un poquito distinto con el scroll.
+  out += volcanoLayer();
+  out += `<g class="para p1">${hills(112, 16, 8, 'var(--h1)', 0.021, 0.047)}</g><g class="para p2">${hills(128, 12, 6, 'var(--h2)', 0.031, 0.013)}</g><g class="para p3">${hills(144, 8, 4, 'var(--h3)', 0.045, 0.02)}</g>`;
   out += `<rect y="152" width="${W}" height="${H - 152}" fill="var(--gr)"/>`;
   // hierba alta que se mece
   for (let i = 0; i < 46; i++) {
     const x = Math.floor(rnd() * W), y = 156 + Math.floor(rnd() * 22);
     out += `<path class="sway" style="animation-delay:${(-rnd() * 2.6).toFixed(2)}s" d="M${x} ${y}h1v-4h1v4h1v-3h1v3h1v-5h1v5h1v-3h1v3h1v1h-9z" fill="var(--tuft)"/>`;
   }
-  out += holidayLayer(sky.holiday) + weatherLayer(sky.weather);
+  out += faunaLayer(sky) + holidayLayer(sky.holiday) + weatherLayer(sky.weather);
   sceneCache = out + '</svg>';
   return sceneCache;
 }
@@ -466,7 +468,19 @@ const fmtPts = x => Number.isInteger(x) ? String(x) : String(x).replace('.', ','
 const dexNo = id => `#${String(id).padStart(4, '0')}`;
 const fmtVal = (v, unit) => `${Number(v).toLocaleString('es')}${unit ? ' ' + unit : ''}`;
 const tog = (act, val, on, label) => `<button class="tog" data-act="${act}" data-val="${esc(val)}" aria-pressed="${on}">${label}</button>`;
-const soundBtn = () => `<button class="ibtn" data-act="mute" aria-label="${Sound.muted ? 'Activar sonido' : 'Silenciar'}">${Sound.muted ? ICON_SOUND_OFF : ICON_SOUND_ON}<span>${Sound.muted ? 'Sin sonido' : 'Sonido'}</span></button>`;
+const ICON_NOTE = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><path d="M5 0h7v2h-5v7h-1v1h-1v1h-3v-1h-1v-2h1v-1h3z"/><path d="M10 2h2v6h-1v1h-1v1h-2v-1h-1v-2h1v-1h2z"/></svg>';
+// Un solo botón de sonido con tres estados: todo (efectos y música), solo efectos y silencio.
+const AUDIO_MODES = ['todo', 'efectos', 'silencio'];
+const AUDIO_LABEL = { todo: 'Música', efectos: 'Efectos', silencio: 'Silencio' };
+const AUDIO_ARIA = { todo: 'Sonido: efectos y música. Tocar para dejar solo efectos', efectos: 'Sonido: solo efectos. Tocar para silenciar', silencio: 'Sin sonido. Tocar para activar efectos y música' };
+const audioMode = () => Sound.muted ? 'silencio' : MUSIC.on ? 'todo' : 'efectos';
+function setAudio(m) {
+  Sound.muted = m === 'silencio'; store.save('pt-mute', Sound.muted);
+  MUSIC.setOn(m === 'todo');
+  if (m !== 'silencio') Sound.play('select');
+  syncMusic();
+}
+const soundBtn = () => { const m = audioMode(); return `<button class="ibtn audiobtn" data-act="audio" aria-label="${AUDIO_ARIA[m]}">${m === 'silencio' ? ICON_SOUND_OFF : m === 'todo' ? ICON_NOTE : ICON_SOUND_ON}<span>${AUDIO_LABEL[m]}</span></button>`; };
 const plural = (n, a, b) => `${n} ${n === 1 ? a : b}`;
 
 function dispatch(action) {
@@ -476,7 +490,8 @@ function dispatch(action) {
   if (state === prev) return;
   afterAction(prev, action);
   persist();
-  render();
+  // Fin de ronda o ronda nueva: con cortina.
+  if (state.phase !== prev.phase && ['roundEnd', 'intro'].includes(state.phase)) curtain(render); else render();
 }
 
 function afterAction(prev, action) {
@@ -505,7 +520,6 @@ function afterAction(prev, action) {
   if (s.phase === 'end' && prev.phase !== 'end') {
     recordEnd();
     Sound.play(endInfo.medals?.length || endInfo.rankUp?.length ? 'rankup' : s.players.length > 1 || endInfo.newRecord || s.config.daily ? 'win' : 'over');
-    if (endInfo.medals?.length) setTimeout(() => toast(`¡Nueva medalla: ${endInfo.medals[0].medal.name}!`), 900);
   }
 }
 
@@ -624,7 +638,7 @@ function grantMedal(id) {
   const have = new Set(records.medals[k] || []);
   if (!m || have.has(id)) return;
   have.add(id); records.medals[k] = [...have]; store.save('pt-records', records);
-  Sound.play('rankup'); setTimeout(() => toast(`¡Nueva medalla: ${m.name}!`), 2700);
+  setTimeout(() => celebrate([{ title: '¡Nueva medalla!', name: m.name, how: m.how, pix: m.pix, color: m.color }]), 1200);
 }
 function recordDaily(s) {
   const date = s.config.daily;
@@ -703,7 +717,7 @@ function skyLine() {
   return h?.label ? `<div class="skyline"><b class="px">${esc(h.label)}</b></div>` : '';
 }
 function tile(act, title, desc, icon, color, i, badgeTxt = '') {
-  return `<button class="tile" data-act="${act}" style="--cc:${color};--i:${i}"><span class="ico">${pixSvg(PIX[icon], '#1d2321')}</span><span class="tt"><b>${title}</b><span>${desc}</span></span>${badgeTxt ? `<span class="nbadge px">${badgeTxt}</span>` : ''}</button>`;
+  return `<button class="tile" data-act="${act}" style="--cc:${color};--i:${i}"><span class="ico">${pixSvg(PIX[icon], '#1d2321').replace('<svg ', `<svg class="keep idle-${icon}" `)}</span><span class="tt"><b>${title}</b><span>${desc}</span></span>${badgeTxt ? `<span class="nbadge px keep">${badgeTxt}</span>` : ''}</button>`;
 }
 const reportsBtn = () => `<button class="ibtn flagbtn" data-act="reports" aria-label="Reportes${reports.length ? ` (${reports.length})` : ''}">${pixSvg(PIX.flag, 'currentColor')}${reports.length ? `<span class="count">${reports.length > 99 ? '99+' : reports.length}</span>` : ''}</button>`;
 
@@ -722,19 +736,19 @@ function menuView() {
   const medals = myMedals().size, total = MEDALS.filter(m => !m.soon).length;
   const pend = pendingToday();
   return `<div class="home">
-    <div class="topbar"><button class="mini-wm" data-act="title"><b>JUAS</b><i>mon</i></button><div class="tools">${reportsBtn()}${musicBtn()}${soundBtn()}</div></div>
+    <div class="topbar"><button class="mini-wm" data-act="title"><b>JUAS</b><i>mon</i></button><div class="tools">${reportsBtn()}${soundBtn()}</div></div>
     ${skyLine()}
     <button class="tcard" data-act="profile" aria-label="Mi perfil: ${esc(me)}">
-      <span class="trow">${avatar(profile, 'big')}<span class="tinfo">
+      <span class="trow">${avatar(profile, 'big keep idlebob')}<span class="tinfo">
         <span class="tname"><b class="px">${esc(me)}</b><span class="rk">${rk.name}</span></span>
-        <span class="xpbar"><i style="width:${pct}%"></i></span>
+        <span class="xpbar"><i style="width:${F.newScreen ? 0 : pct}%" data-fill="${pct}"></i></span>
         <span class="hint">${fmtPts(xp)} XP${rk.next ? ` · faltan ${fmtPts(rk.next[0] - xp)} para ${rk.next[1]}` : ' · ¡rango máximo!'}</span>
       </span></span>
       <span class="stats3">
         <span><small class="px">Medallas</small><b>${medals} / ${total}</b></span>
         <span><small class="px">Racha</small><b>${plural(dailyStreak(), 'día', 'días')}</b></span>
         <span><small class="px">Duelos</small><b>${records.duels[me] || 0}</b></span>
-        <span><small class="px">Fichas</small><b>${fichas.n}</b></span>
+        <span><small class="px">Colones</small><b>₡${fichas.n}</b></span>
       </span>
     </button>
     ${cont}
@@ -744,7 +758,7 @@ function menuView() {
     </div>
     <div class="tiles">
       ${tile('hoy', 'Hoy', pend ? `${plural(pend, 'cosa pendiente', 'cosas pendientes')}` : '¡Todo listo por hoy!', 'star', '#2f6fdb', 3, pend ? String(pend) : '')}
-      ${tile('casino', 'Casino Azulona', `${fichas.n} fichas`, 'coin', '#e8a500', 4)}
+      ${tile('casino', 'Casino Azulona', `Tiene ₡${fichas.n}`, 'coin', '#e8a500', 4)}
       ${tile('roscoSetup', 'Juasrosco', 'De la A a la Z', 'ring', '#e8722a', 5)}
       ${tile('modos', 'Más modos', 'Cadena, tipos y ahorcado', 'dice', '#8a4fd1', 6)}
       ${tile('custom', 'Mis preguntas', custom.length ? plural(custom.length, 'propia', 'propias') : 'Escriba las suyas', 'pencil', 'var(--yellow)', 7)}
@@ -768,7 +782,7 @@ function hoyView() {
     <p class="hint">Todo se renueva a medianoche, hora de Costa Rica.</p>
     ${hubCard('daily', '', 'Reto del día', '10 preguntas, las mismas para todos.', t ? `Hoy hizo ${fmtPts(t.score)} / 10 · racha de ${plural(dailyStreak(), 'día', 'días')}` : 'Pendiente', PIX.star, '#2f6fdb', !!t)}
     ${hubCard('mini-open', 'pokedleDia', 'Pokédle del día', 'Adivine el Pokémon secreto en 6 intentos y compártalo.', pd || 'Pendiente', PIX.dice, '#2e9e4f', MINI.pokedleDone())}
-    ${hubCard('cas-open', 'rasca', 'Raspadita diaria', 'Una gratis por día para el Casino Azulona.', rs ? `Hoy ganó ${CAS.scratchPrize()} fichas` : 'Pendiente', PIX.coin, '#e8a500', rs)}
+    ${hubCard('cas-open', 'rasca', 'Raspadita diaria', 'Una gratis por día para el Casino Azulona.', rs ? `Hoy ganó ₡${CAS.scratchPrize()}` : 'Pendiente', PIX.coin, '#e8a500', rs)}
   </main>`;
 }
 function modosView() {
@@ -1288,7 +1302,7 @@ function endExtras() {
   const xp = s.players.map((p, i) => endInfo.xp?.[i] ? `${esc(p.name)} +${fmtPts(endInfo.xp[i])} XP` : '').filter(Boolean).join(' · ');
   const up = (endInfo.rankUp || []).map(u => `<p class="rankup px">¡${esc(u.name)} sube a ${esc(u.rank)}!</p>`).join('');
   const md = (endInfo.medals || []).map(m => `<div class="newmedal"><span class="mico" style="--mc:${m.medal.color}">${pixSvg(m.medal.pix, m.medal.color)}</span><span><b class="px">¡${esc(m.medal.name)}!</b><span class="hint"> ${esc(m.name)} · ${esc(m.medal.how)}</span></span></div>`).join('');
-  const chips = endInfo.fichas ? `<p class="hint">+${endInfo.fichas} fichas para el Casino Azulona</p>` : '';
+  const chips = endInfo.fichas ? `<p class="hint">+₡${endInfo.fichas} para el Casino Azulona</p>` : '';
   return `<div style="margin-top:10px">${s.config.daily ? '' : rec}</div>${xp ? `<p class="hint">${xp}</p>` : ''}${chips}${up}${md}`;
 }
 
@@ -1485,17 +1499,15 @@ function renderOverlay() {
   if (overlay === 'pause' && state?.online) {
     inner = `<h2 class="px">Un toque…</h2><p class="hint">En línea el reloj sigue corriendo.</p><div class="dlist">
       <button class="ditem" data-act="resume" id="first">Seguir jugando</button>
-      <button class="ditem" data-act="music">${MUSIC.on ? 'Apagar la música' : 'Poner música'}</button>
       <button class="ditem danger" data-act="on-quit">Salir del duelo</button></div>`;
   } else if (overlay === 'pause') {
     inner = `<h2 class="px">Un toque…</h2><div class="dlist">
       <button class="ditem" data-act="resume" id="first">Continuar</button>
       <button class="ditem" data-act="settings">Ajustes</button>
-      <button class="ditem" data-act="music">${MUSIC.on ? 'Apagar la música' : 'Poner música'}</button>
       <button class="ditem danger" data-act="ask-home">Volver al inicio</button></div>`;
   } else if (overlay === 'settings') {
     const c = state.config, ta = c.type === 'contrarreloj' || c.type === 'rosco';
-    if (c.type === 'rosco' || c.daily) inner = `<h2 class="px">Ajustes</h2><div class="field"><span class="l px">Sonido</span><div class="togs">${tog('mute', 'on', !Sound.muted, 'Con sonido')}${tog('mute', 'off', Sound.muted, 'Sin sonido')}</div>
+    if (c.type === 'rosco' || c.daily) inner = `<h2 class="px">Ajustes</h2><div class="field"><span class="l px">Sonido</span><div class="togs">${AUDIO_MODES.map(m => tog('audio', m, audioMode() === m, AUDIO_LABEL[m] === 'Música' ? 'Efectos y música' : AUDIO_LABEL[m] === 'Efectos' ? 'Solo efectos' : 'Silencio')).join('')}</div>
       <p class="hint">${c.daily ? 'El reto del día es igual para todos, así que sus ajustes no se pueden cambiar.' : 'Los jugadores y el tiempo del rosco no se pueden cambiar a media partida. Su reloj está detenido mientras esta ventana está abierta.'}</p>
       <div class="row between"><button class="btn ghost" data-act="pause">◀ Volver</button><button class="btn ghost" data-act="ask-restart">Empezar de nuevo</button></div></div>`;
     else inner = `<h2 class="px">Ajustes</h2><div class="field">
@@ -1504,7 +1516,7 @@ function renderOverlay() {
       <span class="l px">Regiones de los Pokémon</span><div class="togs regions">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(g => tog('live-gen', g, c.gens.includes(g), `${REGIONS[g]} <small>${g}</small>`)).join('')}</div>
       ${c.type !== 'rosco' && E.isMixed(state) ? `<span class="l px">Formatos</span><div class="togs">${Object.entries(E.FORMATS).filter(([k]) => !(ta && ['bomba', 'pokedle'].includes(k))).map(([k, n]) => tog('live-fmt', k, (c.formats || []).includes(k), n)).join('')}</div>` : ''}
       ${c.type !== 'rosco' ? `<span class="l px">Temas de las preguntas</span><div class="togs">${Object.entries(E.CATS).map(([k, n]) => tog('live-cat', k, (c.cats || []).includes(k), n)).join('')}</div>` : ''}
-      <span class="l px">Sonido</span><div class="togs">${tog('mute', 'on', !Sound.muted, 'Con sonido')}${tog('mute', 'off', Sound.muted, 'Sin sonido')}</div>
+      <span class="l px">Sonido</span><div class="togs">${AUDIO_MODES.map(m => tog('audio', m, audioMode() === m, AUDIO_LABEL[m] === 'Música' ? 'Efectos y música' : AUDIO_LABEL[m] === 'Efectos' ? 'Solo efectos' : 'Silencio')).join('')}</div>
       <p class="hint">Los cambios aplican desde la siguiente pregunta.</p>
       <p class="hint">${c.type === 'clasica' ? 'Los jugadores, las rondas y las preguntas por ronda' : 'El modo de juego y los tipos de pregunta'} no se pueden cambiar a media partida.</p>
       <div class="row between"><button class="btn ghost" data-act="pause">◀ Volver</button><button class="btn ghost" data-act="ask-restart">Empezar de nuevo</button></div></div>`;
@@ -1675,13 +1687,21 @@ function startTyping(root) {
 }
 function finishTyping() { typers.forEach(t => t.finish()); typers = []; }
 
-function wipe() {
-  if (reduced) return;
+// Cortina de franjas: se cierra, cambia la página por detrás y se abre.
+let curtainBusy = false;
+function curtain(fn) {
+  if (reduced || curtainBusy) { fn(); return; }
+  curtainBusy = true;
   const w = document.createElement('div');
-  w.className = 'wipe';
+  w.className = 'wipe closing';
   w.innerHTML = Array.from({ length: 8 }, (_, i) => `<i style="--i:${i}"></i>`).join('');
   document.body.appendChild(w);
-  setTimeout(() => w.remove(), 1200);
+  setTimeout(() => {
+    try { fn(); } finally {
+      w.classList.replace('closing', 'opening');
+      setTimeout(() => { w.remove(); curtainBusy = false; }, 560);
+    }
+  }, 440);
 }
 function confetti() {
   if (reduced) return;
@@ -1705,6 +1725,80 @@ function countUp() {
   last.scores = state.scores.slice();
 }
 
+// ---------- animaciones para que todo se sienta vivo ----------
+function lively() {
+  // Barra de XP que se llena al entrar
+  $app.querySelectorAll('[data-fill]').forEach(el => requestAnimationFrame(() => requestAnimationFrame(() => { el.style.width = el.dataset.fill + '%'; })));
+  // Colones que suben o bajan contando
+  const chip = $app.querySelector('[data-count]');
+  if (chip) {
+    const to = +chip.dataset.count, from = last.chips ?? to;
+    if (from !== to && !reduced) {
+      chip.classList.add('bump', 'keep');
+      const t0 = performance.now();
+      const step = t => { const k = Math.min(1, (t - t0) / 600); chip.textContent = `₡${Math.round(from + (to - from) * k)}`; if (k < 1) requestAnimationFrame(step); };
+      chip.textContent = `₡${from}`; requestAnimationFrame(step);
+    }
+    last.chips = to;
+  }
+}
+// Chispitas alrededor de un elemento (respuesta correcta)
+function sparkle(el) {
+  if (reduced || !el) return;
+  const r = el.getBoundingClientRect();
+  for (let i = 0; i < 12; i++) {
+    const s = document.createElement('i');
+    s.className = 'spark';
+    const a = i / 12 * Math.PI * 2, d = 40 + Math.random() * 40;
+    s.style.left = `${r.left + r.width / 2}px`; s.style.top = `${r.top + r.height / 2}px`;
+    s.style.setProperty('--dx', `${Math.cos(a) * (r.width / 2 + d * .4)}px`); s.style.setProperty('--dy', `${Math.sin(a) * (r.height / 2 + d * .5)}px`);
+    s.style.background = ['#ffcb05', '#ffffff', '#2e9e4f'][i % 3];
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 800);
+  }
+}
+// Los puntos ganados vuelan hasta el marcador
+function flyPoints(points, player) {
+  if (reduced || !(points > 0)) return;
+  const from = $app.querySelector('.verdict'), to = document.querySelector(`[data-score="${player}"]`);
+  if (!from || !to) return;
+  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'flypts px'; el.textContent = `+${fmtPts(points)}`;
+  el.style.left = `${a.left + a.width / 2}px`; el.style.top = `${a.top}px`;
+  document.body.appendChild(el);
+  el.animate([{ transform: 'translate(-50%,0) scale(1)', opacity: 1 }, { transform: 'translate(-50%,-30px) scale(1.3)', opacity: 1, offset: .25 },
+    { transform: `translate(calc(-50% + ${b.left + b.width / 2 - a.left - a.width / 2}px), ${b.top - a.top}px) scale(.6)`, opacity: .3 }], { duration: 850, easing: 'cubic-bezier(.4,0,.2,1)' }).onfinish = () => el.remove();
+}
+// Lluvia de monedas (casino)
+function coinRain() {
+  if (reduced) return;
+  const box = document.createElement('div');
+  box.className = 'confetti coins';
+  box.innerHTML = Array.from({ length: 26 }, () => `<i style="left:${Math.random() * 100}%;--d:${(1.6 + Math.random() * 1.4).toFixed(2)}s;--delay:${(Math.random() * .6).toFixed(2)}s">${pixSvg(PIX.coin, '#c98a00')}</i>`).join('');
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 3600);
+}
+// Celebración grande al ganar medallas o subir de rango (una por una)
+let celebQueue = [];
+function celebrate(items) {
+  celebQueue.push(...items);
+  if (!document.querySelector('.celebrate')) nextCelebration();
+}
+function nextCelebration() {
+  const it = celebQueue.shift();
+  if (!it) return;
+  const el = document.createElement('div');
+  el.className = 'celebrate';
+  el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', it.title);
+  el.innerHTML = `<div class="celebox"><span class="celeicon" style="--mc:${it.color || '#ffcb05'}">${pixSvg(it.pix, it.color || '#ffcb05')}</span>
+    <p class="px celetitle">${esc(it.title)}</p><p class="celename">${esc(it.name)}</p>${it.how ? `<p class="hint">${esc(it.how)}</p>` : ''}
+    <button class="btn" data-act="celeb-ok">¡JUAS!</button></div>`;
+  document.body.appendChild(el);
+  Sound.play('rankup'); confetti();
+  el.querySelector('button').focus();
+}
+
 // ---------- dibujar ----------
 // Enlace de invitación: jbcdev39.github.io/juasmon/?sala=CÓDIGO
 const linkSala = new URLSearchParams(location.search).get('sala');
@@ -1713,10 +1807,17 @@ const MUSIC = createMusic(Sound, store);
 let userTouched = false;
 const GAME_TRACK = new Set(['game', 'tipos', 'cadena', 'ahorcado', 'cadenaOnline', 'c21', 'alta', 'doble']);
 const syncMusic = () => { if (userTouched) MUSIC.play(GAME_TRACK.has(view) ? 'juego' : 'menu'); };
-const musicBtn = () => `<button class="ibtn" data-act="music" aria-label="${MUSIC.on ? 'Apagar la música' : 'Poner música'}" aria-pressed="${MUSIC.on}">${ICON_NOTE}<span>${MUSIC.on ? 'Música' : 'Sin música'}</span></button>`;
-const ICON_NOTE = '<svg viewBox="0 0 12 12" shape-rendering="crispEdges" aria-hidden="true" fill="currentColor"><path d="M5 0h7v2h-5v7h-1v1h-1v1h-3v-1h-1v-2h1v-1h3z"/><path d="M10 2h2v6h-1v1h-1v1h-2v-1h-1v-2h1v-1h2z"/></svg>';
 const SCENIC = new Set(['online', 'sala', 'cadenaOnline', 'menu', 'welcome', 'profile', 'solo', 'roscoSetup', 'custom', 'records', 'reports', 'daily', 'hoy', 'modos', 'pokedleDia', 'tipos', 'cadena', 'ahorcado', 'casino', 'c21', 'alta', 'doble', 'rasca']);
 const $bg = document.getElementById('bg');
+let paraRaf = 0;
+window.addEventListener('scroll', () => {
+  if (reduced || paraRaf || !document.body.classList.contains('scenic')) return;
+  paraRaf = requestAnimationFrame(() => {
+    paraRaf = 0;
+    const y = Math.min(window.scrollY, 1500);
+    $bg.querySelectorAll('.para').forEach((g, i) => { g.style.transform = `translateY(${(-y * [0.006, 0.012, 0.02][i]).toFixed(2)}px)`; });
+  });
+}, { passive: true });
 // «¡Pellízquese!»: aparece en los últimos 5 segundos de cualquier reloj.
 let hurryOn = false;
 function setHurry(on) {
@@ -1759,15 +1860,29 @@ function render() {
   document.body.classList.toggle('scenic', scenic);
   if (view !== 'game') setHurry(false);
   $app.innerHTML = html;
+  $app.dataset.phase = view === 'game' && state ? state.phase : '';
   syncMusic();
+  lively();
   $app.classList.toggle('still', !F.newScreen);
   flash = '';
   if (F.newScreen) startTyping($app); else finishTyping();
   if (view === 'game') {
     countUp();
-    if (F.newScreen && (state.phase === 'roundEnd' || state.phase === 'intro')) wipe();
     if (F.newScreen && state.phase === 'end' && (state.players.length > 1 ? E.winners(state).length === 1 : endInfo.newRecord || endInfo.rankUp?.length)) confetti();
     if (F.newScreen && state.phase === 'reveal' && state.result?.correct) juasHit(state.result.streak >= 3);
+    if (F.newScreen && state.phase === 'reveal' && state.result) {
+      const r = state.result, me = state.online ? state.online.me : E.currentPlayer(state);
+      if (r.correct || r.partial) { sparkle($app.querySelector('.opt.right') || $app.querySelector('.verdict')); flyPoints(r.bet ? r.bet.delta : r.points, me); }
+      else if (!r.timeout) $app.querySelector('.result')?.classList.add('shakeit');
+    }
+    if (F.newScreen && state.phase === 'end' && !endInfo.celebrated && (endInfo.medals?.length || endInfo.rankUp?.length)) {
+      endInfo.celebrated = true;
+      const me = state.online ? state.players[state.online.me].name.trim() : null;
+      setTimeout(() => celebrate([
+        ...(endInfo.rankUp || []).filter(u => !me || u.name === me).map(u => ({ title: '¡Subió de rango!', name: `${u.name}: ${u.rank}`, pix: PIX.trophy, color: '#2e9e4f' })),
+        ...(endInfo.medals || []).map(m => ({ title: '¡Nueva medalla!', name: m.medal.name, how: m.medal.how, pix: m.medal.pix, color: m.medal.color })),
+      ]), 700);
+    }
     if (state.phase === 'rosco' && state.rosco.last?.ok && state.rosco.seq !== last.rseq) juasHit(false);
     last.rseq = state.rosco?.seq;
     syncEst();
@@ -1793,10 +1908,14 @@ function startGame(engineCfg) {
   clock.qKey = ''; clock.tEnd = 0; clock.tLeft = state.config.duration * 1000; clock.paused = false;
   goto('game');
 }
+// Pantallas grandes a las que se entra con cortina.
+const CURTAIN_VIEWS = new Set(['game', 'casino', 'c21', 'alta', 'doble', 'tipos', 'cadena', 'ahorcado', 'cadenaOnline', 'pokedleDia']);
 function goto(v) {
   if (v !== view && ['c21', 'doble', 'alta'].includes(view)) CAS.leave();
   if (v !== view && MINI.VIEWS[view]) MINI.stop();
-  view = v; document.querySelectorAll('.confetti').forEach(c => c.remove()); window.scrollTo?.(0, 0); render(); }
+  const go = () => { view = v; document.querySelectorAll('.confetti').forEach(c => c.remove()); window.scrollTo?.(0, 0); render(); };
+  if (v !== view && CURTAIN_VIEWS.has(v) && !(v === 'casino' && ['c21', 'alta', 'doble', 'rasca'].includes(view))) curtain(go); else go();
+}
 function shared() {
   return { structure: cfg.structure, formats: cfg.formats.slice(), rounds: cfg.rounds.filter(k => E.ROUND_MODES.includes(k)), perPlayer: cfg.perPlayer, gens: cfg.gens.slice(), cats: cfg.cats.slice(), idiomaMode: cfg.idiomaMode, timer: cfg.timer, allIn: !!cfg.allIn };
 }
@@ -1859,6 +1978,7 @@ document.addEventListener('click', e => {
   const toggle = (arr, x) => arr.includes(x) ? arr.filter(y => y !== x) : arr.concat(x);
   const quiet = ['ac-pick', 'answer', 'typed', 'hint', 'mute', 'press', 'bomb-send', 'ord-ok', 'pr-ok', 'mt-ok', 'r-answer', 'r-pass', 'pd-send', 'est-ok', 'r-ready'];
   if (!quiet.includes(act)) Sound.play(act === 'menu' || act === 'confirm-no' || act === 'resume' ? 'back' : 'select');
+  if (act === 'celeb-ok') { b.closest('.celebrate')?.remove(); nextCelebration(); return; }
   if (MINI.act(act, v) || CAS.act(act, v) || ONLINE.act(act, v)) return;
   switch (act) {
     case 'press': Sound.play('start'); if (profile) goto('menu'); else openProfile(true); return;
@@ -1871,8 +1991,7 @@ document.addEventListener('click', e => {
     case 'prof-save': saveProfile(); return;
     case 'title': goto('title'); return;
     case 'menu': goto('menu'); return;
-    case 'mute': if (!v || (v === 'off') !== Sound.muted) Sound.toggle(); if (Sound.muted) MUSIC.stop(); render(); if (overlay) renderOverlay(); return;
-    case 'music': MUSIC.toggle(); render(); if (overlay) renderOverlay(); return;
+    case 'audio': setAudio(v || AUDIO_MODES[(AUDIO_MODES.indexOf(audioMode()) + 1) % 3]); render(); if (overlay) renderOverlay(); return;
     case 'solo': case 'multi': case 'custom': case 'records': goto(act); return;
     case 'daily': goto('daily'); loadDailyBoard(); return;
     case 'playDaily': if (!daily[crDate()]) startDaily(); return;
@@ -2078,7 +2197,7 @@ const modApi = {
   E, esc, store, Sound, toast, tog, plural, pixSvg, PIX, AV_ICONS, badge: id => badge(id), typePills: p => typePills(p),
   ctx: () => ctx, view: () => view, F: () => F, render: () => render(), goto: v => goto(v), screenHead: (t, b) => screenHead(t, b),
   records: () => records, saveRecords: () => store.save('pt-records', records), crDate: () => crDate(),
-  addFichas: n => addFichas(n), fichas: () => fichas, hurry: on => setHurry(on),
+  addFichas: n => addFichas(n), fichas: () => fichas, hurry: on => setHurry(on), coinRain: () => coinRain(),
 };
 const MINI = createMinis(modApi);
 const ONLINE = createOnline({

@@ -152,3 +152,44 @@ export function holidayLayer(h) {
   }
   return out;
 }
+
+// ---------- volcán y fauna tica (dibujos propios) ----------
+// En el celular solo se ve el centro del paisaje (x ≈ 118 a 202), así que lo importante va ahí.
+export function volcanoLayer() {
+  let out = '';
+  const cx = 176, top = 66, base = 118;
+  for (let y = top; y < base; y += 2) {
+    const half = Math.round(4 + (y - top) * 0.95);
+    out += px(cx - half, y, half * 2, 2, 'var(--vol)');
+  }
+  // cráter y un poco de nieve/roca clara en la punta
+  out += px(cx - 5, top, 10, 2, 'var(--vol2)') + px(cx - 3, top - 1, 6, 1, 'var(--vol2)');
+  // humo que sube despacito
+  for (let i = 0; i < 4; i++) out += `<g class="smoke" style="animation-delay:${(-i * 1.6).toFixed(1)}s">${px(cx - 3 + (i % 2) * 3, top - 6, 5, 4, 'var(--smoke)')}${px(cx - 1 + (i % 2) * 3, top - 9, 4, 3, 'var(--smoke)')}</g>`;
+  return out;
+}
+const TOUCAN = [[0, 2, 6, 3, '#1d2321'], [1, 3, 2, 2, '#ffffff'], [6, 2, 5, 2, '#ff9a1f'], [6, 3, 4, 1, '#ffd23f'], [4, 1, 2, 1, '#1d2321'], [5, 2, 1, 1, '#4b9bff'], [-2, 3, 2, 1, '#1d2321'], [2, 5, 3, 1, '#1d2321']];
+const HUMMER = [[0, 1, 3, 2, '#2e9e4f'], [3, 1, 3, 1, '#1d2321'], [1, 0, 1, 1, '#d81f2a'], [-1, 2, 1, 1, '#2e9e4f']];
+const sprite = (parts, x, y) => parts.map(([dx, dy, w, h, c]) => px(x + dx, y + dy, w, h, c)).join('');
+export function faunaLayer(sky) {
+  let out = '';
+  const day = !sky.night, wet = ['lluvia', 'tormenta', 'llovizna'].includes(sky.weather);
+  // Árbol con un perezoso colgando de la rama (casi no se mueve, como debe ser)
+  const tx = 150, ty = 112;
+  out += px(tx, ty, 3, 22, '#5a3d24') + px(tx - 10, ty - 2, 14, 2, '#5a3d24');
+  out += px(tx - 8, ty - 12, 20, 6, 'var(--leaf)') + px(tx - 12, ty - 8, 26, 6, 'var(--leaf)') + px(tx - 4, ty - 15, 12, 4, 'var(--leaf)');
+  out += `<g class="sloth" style="transform-origin:${tx - 8}px ${ty}px">${px(tx - 9, ty, 1, 3, '#7a5a3a')}${px(tx - 6, ty, 1, 3, '#7a5a3a')}${px(tx - 10, ty + 3, 6, 5, '#9c7a55')}${px(tx - 9, ty + 4, 4, 2, '#d9c3a0')}${px(tx - 9, ty + 4, 1, 1, '#1d2321')}${px(tx - 6, ty + 4, 1, 1, '#1d2321')}</g>`;
+  if (day && !wet) {
+    // Tucán y colibrí que cruzan de vez en cuando
+    out += `<g class="flyby" style="animation-duration:26s;animation-delay:-6s"><g class="flap">${sprite(TOUCAN, -20, 46)}</g></g>`;
+    out += `<g class="flyby rev" style="animation-duration:19s;animation-delay:-13s"><g class="hover">${sprite(HUMMER, -10, 78)}</g></g>`;
+    // Mariposa morfo azul sobre el zacate
+    out += `<g class="morpho"><g class="wings">${px(130, 146, 3, 3, '#3f7bff')}${px(134, 146, 3, 3, '#3f7bff')}${px(133, 146, 1, 4, '#1d2321')}${px(131, 147, 1, 1, '#9fd0ff')}${px(135, 147, 1, 1, '#9fd0ff')}</g></g>`;
+  }
+  if (sky.night && !wet) {
+    // Luciérnagas de noche
+    const r = rnd(99);
+    for (let i = 0; i < 14; i++) out += px(110 + Math.floor(r() * 100), 130 + Math.floor(r() * 40), 1, 1, '#f4ff7a', `class="firefly" style="animation-delay:${(-r() * 3).toFixed(1)}s;animation-duration:${(2 + r() * 2).toFixed(1)}s"`);
+  }
+  return out;
+}

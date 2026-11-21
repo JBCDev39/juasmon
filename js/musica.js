@@ -102,6 +102,7 @@ export function createMusic(Sound, store) {
   return {
     get on() { return on; },
     toggle() { on = !on; store.save('pt-music', on); if (!on) stop(); },
+    setOn(v) { on = !!v; store.save('pt-music', on); if (!on) stop(); },
     play, stop,
   };
 }
