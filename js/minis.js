@@ -212,7 +212,7 @@ export function createMinis(api) {
     api.Sound.play('ok');
     st.turn = 'app'; st.letter = cadLetter(p.id); api.hurry(false);
     api.render();
-    setTimeout(cadApp, 900);
+    setTimeout(cadApp, 1500);
   }
   function cadApp() {
     if (st.mode !== 'cadena' || st.phase !== 'play') return;
@@ -229,12 +229,14 @@ export function createMinis(api) {
     const head = api.screenHead('Cadena Pokémon', 'modos');
     if (st.mode !== 'cadena') {
       const best = api.records().solo.cadena;
-      return `${head}<main class="enter"><div class="box"><p class="q">Usted contra la app: por turnos, cada uno dice un Pokémon que empiece con la última letra del anterior. Pikachu → Umbreon → Nidoking…</p>
+      return `${head}<main class="enter"><div class="box"><p class="q">Usted contra la app: por turnos, se turnan para decir un Pokémon que empiece con la última letra del anterior. Por ejemplo: usted dice Pikachu, la app contesta Umbreon y usted sigue con uno que empiece con N.</p>
         <p class="hint">Tiene 20 segundos por turno y no se puede repetir. Pierde quien se quede pegado. ${best ? `Su récord: ${best.best} seguidos.` : ''}</p>
         <div class="row end" style="margin-top:12px"><button class="btn" data-act="cad-start" id="nextbtn">¡Vamos!</button></div></div></main>`;
     }
     const cx = ctx();
-    const chips = st.chain.slice(-12).map(c => `<span class="chip2 ${c.who}" style="--c:${c.who === 'yo' ? 'var(--blue)' : 'var(--red)'}">${esc(cx.byId.get(c.id).name)}</span>`).join('<span class="arrow" aria-hidden="true">→</span>');
+    const shown = st.chain.slice(-12);
+    const chips = shown.map((c, i) => `<span class="chip2 ${c.who}${i === shown.length - 1 && st.phase === 'play' ? ' last keep' : ''}" style="--c:${c.who === 'yo' ? 'var(--blue)' : 'var(--red)'}">${esc(cx.byId.get(c.id).name)}</span>`).join('<span class="arrow" aria-hidden="true">→</span>');
+    const legend = '<p class="cadleg"><span style="--c:var(--blue)">Usted</span><span style="--c:var(--red)">La app</span></p>';
     if (st.phase === 'end') {
       const title = st.won ? '¡Le ganó a la app!' : 'Diay, se quedó pegado';
       return `${head}<main class="enter"><div class="box"><p class="big px" data-tw="${esc(title)}">${esc(title)}</p>
@@ -246,9 +248,11 @@ export function createMinis(api) {
     const left = st.deadline - Date.now();
     return `${head}<main>
       <div class="timer px"><span>${st.turn === 'yo' ? 'Su turno' : 'Turno de la app…'}</span><div class="hp"><i id="cad-bar" style="width:${st.turn === 'yo' ? Math.max(0, left / CAD_TURN * 100) : 100}%"></i></div><span id="cad-time">${st.turn === 'yo' ? secs(left) : ''}</span></div>
-      <div class="box"><div class="chips cadchips">${chips}</div></div>
-      <div class="box field"><p class="q">Un Pokémon que empiece con <b class="bigletter px">${st.letter.toUpperCase()}</b></p>
-        <div class="row"><input class="input" id="typed" data-ac="pokemon" autocomplete="off" placeholder="Escriba un Pokémon" style="flex:1" ${st.turn === 'yo' ? '' : 'disabled'}><button class="btn" data-act="cad-send" ${st.turn === 'yo' ? '' : 'disabled'}>Enviar</button></div>
+      <div class="box">${legend}<div class="chips cadchips">${chips}</div></div>
+      <div class="box field">${st.turn === 'yo'
+        ? `<p class="hint cadsaid keep">${st.chain.length === 1 ? 'La app empezó con' : 'La app dijo'} <b>${esc(cx.byId.get(st.chain[st.chain.length - 1].id).name)}</b>.</p><p class="q">Ahora usted: un Pokémon que empiece con <b class="bigletter px">${st.letter.toUpperCase()}</b></p>`
+        : `<p class="q cadthink keep">La app está buscando uno con <b class="bigletter px">${st.letter.toUpperCase()}</b>…</p>`}
+        <div class="row"><input class="input" id="typed" data-ac="pokemon" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="${st.turn === 'yo' ? 'Escriba un Pokémon' : 'Espere su turno…'}" style="flex:1" ${st.turn === 'yo' ? '' : 'disabled'}><button class="btn" data-act="cad-send" ${st.turn === 'yo' ? '' : 'disabled'}>Enviar</button></div>
         ${st.msg ? `<p class="flash bad keep">${esc(st.msg)}</p>` : ''}<p class="hint">Lleva ${st.mine}.</p></div>
     </main>`;
   }
@@ -292,28 +296,42 @@ export function createMinis(api) {
     else if (st.errors >= 6) {
       st.phase = 'lost';
       st.rec = saveBest('ahorcado', 'Ahorcado · palabras seguidas', st.words);
-      api.Sound.play('boom');
+      api.Sound.play('over');
     }
     api.render();
   }
-  function fuse(errors) {
-    // Bomba pixelada: la mecha se va quemando con cada error.
-    const left = 6 - errors;
-    let segs = '';
-    for (let i = 0; i < 6; i++) segs += `<rect x="${24 + i * 6}" y="${10 - (i % 2) * 2}" width="6" height="2" fill="${i < left ? '#8a6a3a' : 'transparent'}"/>`;
-    const spark = left > 0 ? `<rect x="${22 + left * 6}" y="4" width="4" height="4" fill="#ffcb05"/><rect x="${24 + left * 6}" y="2" width="2" height="2" fill="#e3350d"/>` : '';
-    return `<svg class="ahfuse" viewBox="0 0 64 40" shape-rendering="crispEdges" aria-hidden="true">${segs}${spark}
-      <rect x="6" y="14" width="16" height="22" fill="#1d2321"/><rect x="2" y="18" width="24" height="14" fill="#1d2321"/><rect x="14" y="10" width="6" height="6" fill="#1d2321"/><rect x="8" y="18" width="4" height="4" fill="#fff" opacity=".6"/></svg>`;
+  function gallows(errors, phase) {
+    // Ahorcado clásico pixelado: la horca siempre está; con cada error aparece una parte del muñeco.
+    const R = (x, y, w, h, c) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"/>`;
+    const wood = '#a0743c', ink = 'var(--ink)';
+    let g = R(4, 44, 30, 3, wood) + R(10, 4, 3, 40, wood) + R(10, 4, 28, 3, wood) + R(13, 7, 3, 3, wood) + R(16, 10, 3, 3, wood) + R(36, 7, 2, 6, '#c9b08a');
+    const parts = [
+      // cabeza (con cara cuando pierde o gana)
+      R(33, 13, 8, 2, ink) + R(31, 15, 2, 6, ink) + R(41, 15, 2, 6, ink) + R(33, 21, 8, 2, ink) +
+        (phase === 'lost' ? R(34, 16, 1, 1, ink) + R(36, 16, 1, 1, ink) + R(35, 17, 1, 1, ink) + R(34, 18, 1, 1, ink) + R(36, 18, 1, 1, ink) + R(37, 16, 1, 1, ink) + R(39, 16, 1, 1, ink) + R(38, 17, 1, 1, ink) + R(37, 18, 1, 1, ink) + R(39, 18, 1, 1, ink)
+          : R(34, 17, 2, 2, ink) + R(38, 17, 2, 2, ink)),
+      R(36, 23, 2, 11, ink),                                   // cuerpo
+      R(34, 25, 2, 2, ink) + R(32, 27, 2, 2, ink) + R(30, 29, 2, 2, ink), // brazo izquierdo
+      R(38, 25, 2, 2, ink) + R(40, 27, 2, 2, ink) + R(42, 29, 2, 2, ink), // brazo derecho
+      R(34, 34, 2, 3, ink) + R(32, 37, 2, 3, ink) + R(30, 40, 2, 2, ink), // pierna izquierda
+      R(38, 34, 2, 3, ink) + R(40, 37, 2, 3, ink) + R(42, 40, 2, 2, ink), // pierna derecha
+    ];
+    for (let i = 0; i < Math.min(errors, 6); i++) g += `<g class="${i === errors - 1 && phase === 'play' ? 'ahnew keep' : ''}">${parts[i]}</g>`;
+    return `<svg class="ahfig${phase === 'lost' ? ' ahlost keep' : ''}" viewBox="0 0 48 48" shape-rendering="crispEdges" aria-label="${errors} de 6 errores">${g}</svg>`;
   }
   function ahorcadoView() {
     const head = api.screenHead('Ahorcado', 'modos');
     if (st.mode !== 'ahorcado') {
       const best = api.records().solo.ahorcado;
       return `${head}<main class="enter"><div class="box"><p class="q">Adivine la palabra letra por letra. Puede ser un Pokémon, un movimiento, una habilidad, un líder, una ciudad o una región.</p>
-        <p class="hint">Tiene 6 errores antes de que la bomba se despiche. Siga adivinando palabras hasta que pierda una. ${best ? `Su récord: ${best.best} seguidas.` : ''}</p>
+        <p class="hint">Tiene 6 errores: con cada uno se va dibujando el ahorcado. Siga adivinando palabras hasta que pierda una. ${best ? `Su récord: ${best.best} seguidas.` : ''}</p>
         <div class="row end" style="margin-top:12px"><button class="btn" data-act="ah-start" id="nextbtn">¡Vamos!</button></div></div></main>`;
     }
-    const show = [...st.word].map(ch => !isLetter(ch) ? `<span class="ahc sep">${ch === ' ' ? '&nbsp;' : esc(ch)}</span>` : `<span class="ahc ${st.phase === 'lost' && !st.guessed.has(baseLetter(ch)) ? 'miss' : ''}">${st.guessed.has(baseLetter(ch)) || st.phase === 'lost' ? esc(ch.toUpperCase()) : '&nbsp;'}</span>`).join('');
+    // Cada palabra va junta en su propio bloque (nunca se parte a la mitad) y las letras se achican si la palabra es larga.
+    const cell = ch => !isLetter(ch) ? `<span class="ahc sep">${esc(ch)}</span>` : `<span class="ahc ${st.phase === 'lost' && !st.guessed.has(baseLetter(ch)) ? 'miss' : ''}">${st.guessed.has(baseLetter(ch)) || st.phase === 'lost' ? esc(ch.toUpperCase()) : '&nbsp;'}</span>`;
+    const parts = st.word.split(' ').filter(Boolean);
+    const longest = Math.max(...parts.map(w => [...w].length));
+    const show = parts.map(w => `<span class="ahw">${[...w].map(cell).join('')}</span>`).join('');
     const keys = ALPHA.map(L => {
       const used = st.guessed.has(L), hit = used && [...st.word].some(ch => isLetter(ch) && baseLetter(ch) === L);
       return `<button class="ahk ${used ? (hit ? 'hit' : 'no') : ''}" data-act="ah-key" data-val="${L}" ${used || st.phase !== 'play' ? 'disabled' : ''}>${L}</button>`;
@@ -324,7 +342,7 @@ export function createMinis(api) {
       <div class="row end"><button class="btn ghost" data-act="go-modos">Más modos</button><button class="btn" data-act="ah-start" id="nextbtn">Otra vez</button></div>`;
     return `${head}<main>
       <div class="box ahbox"><div class="row between"><span class="hint px catl">${esc(st.cat)}</span><span class="hint">Lleva ${st.words} · ${6 - st.errors} ${6 - st.errors === 1 ? 'vida' : 'vidas'}</span></div>
-        ${fuse(st.errors)}<div class="ahword">${show}</div>${foot}</div>
+        ${gallows(st.errors, st.phase)}<div class="ahword" style="--n:${longest}">${show}</div>${foot}</div>
       <div class="ahkeys">${keys}</div>
     </main>`;
   }

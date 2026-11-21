@@ -42,7 +42,7 @@ const RANKS = [[0, 'Novato'], [25, 'Entrenador'], [75, 'Líder de gimnasio'], [1
 const rankOf = xp => { let r = RANKS[0]; for (const x of RANKS) if (xp >= x[0]) r = x; const i = RANKS.indexOf(r); return { name: r[1], next: RANKS[i + 1] || null, i }; };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
-const APP_VERSION = 16;
+const APP_VERSION = 17;
 const FLAG_REASONS = ['La respuesta está mal', 'La pregunta no tiene sentido o es confusa', 'Un nombre o dato está mal escrito', 'Es demasiado fácil o difícil', 'Otro'];
 const FLAG_SVG = '<svg class="flagico" viewBox="0 0 10 12" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="0" width="1" height="12" fill="currentColor"/><rect x="2" y="1" width="6" height="1" fill="var(--red)"/><rect x="2" y="2" width="7" height="3" fill="var(--red)"/><rect x="2" y="5" width="5" height="1" fill="var(--red)"/></svg>';
 const store = {
@@ -794,9 +794,9 @@ function hoyView() {
 function modosView() {
   const best = k => records.solo[k] ? `Récord: ${records.solo[k].best}` : 'Sin récord todavía';
   return `${screenHead('Más modos')}<main class="${F.newScreen ? 'enter' : ''} hub">
-    ${hubCard('mini-open', 'cadena', 'Cadena Pokémon', 'Contra la app: un Pokémon que empiece con la última letra del anterior.', best('cadena'), PIX.ring, '#2f6fdb', false, 'ring')}
+    ${hubCard('mini-open', 'cadena', 'Cadena Pokémon', 'Por turnos contra la app: un Pokémon que empiece con la última letra del anterior.', best('cadena'), PIX.ring, '#2f6fdb', false, 'ring')}
     ${hubCard('mini-open', 'tipos', 'Tipo contra tipo', '30 segundos de reflejos: ¿cuánto daño le hace?', best('tipos'), AV_ICONS.rayo, '#e3350d', false, 'zap')}
-    ${hubCard('mini-open', 'ahorcado', 'Ahorcado', 'Letra por letra antes de que la bomba se despiche.', best('ahorcado'), AV_ICONS.fantasma || PIX.pencil, '#8a4fd1', false, 'ghost')}
+    ${hubCard('mini-open', 'ahorcado', 'Ahorcado', 'Letra por letra antes de que se complete el ahorcado.', best('ahorcado'), AV_ICONS.fantasma || PIX.pencil, '#8a4fd1', false, 'ghost')}
   </main>`;
 }
 function screenHead(title, back = 'menu') {

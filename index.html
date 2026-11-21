@@ -488,14 +488,26 @@ main.solo{padding-bottom:0}
 /* Cadena Pokémon */
 .cadchips{align-items:center}
 .cadchips .arrow{color:var(--soft)}
+.chip2.last{animation:lastchip 1.2s ease-out;box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 40%,transparent)}
+@keyframes lastchip{0%{transform:scale(.6);opacity:0}40%{transform:scale(1.15);opacity:1}100%{transform:none}}
+.cadleg{display:flex;gap:14px;margin:0 0 8px;font-size:13px;color:var(--soft)}
+.cadleg span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c);margin-right:6px;vertical-align:-1px}
+.cadsaid{margin:0 0 4px}.cadsaid b{color:var(--red)}
+.cadthink{animation:thinkfade 1.2s ease-in-out infinite}
+@keyframes thinkfade{50%{opacity:.55}}
 .bigletter{display:inline-grid;place-items:center;min-width:44px;height:44px;border-radius:10px;background:var(--yellow);color:#1d2321;border:2px solid #1d2321;font-size:18px;vertical-align:middle}
 /* Ahorcado */
 .ahbox{display:grid;gap:10px;justify-items:center;text-align:center}
 .ahbox>.row{width:100%}
-.ahfuse{width:150px;height:94px}
-.ahword{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.ahfig{width:132px;height:132px}
+.ahfig .ahnew{animation:ahin .4s steps(4)}
+@keyframes ahin{0%{opacity:0}100%{opacity:1}}
+.ahfig.ahlost{animation:jitter .4s 2}
+.ahword{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 22px;width:100%;container-type:inline-size}
+.ahw{display:flex;flex-wrap:nowrap;gap:4px}
+.ahword .ahc{width:min(28px,calc((100cqw - (var(--n) - 1) * 4px) / var(--n)));font-size:min(18px,calc((100cqw - (var(--n) - 1) * 4px) / var(--n) * .62))}
 .ahc{display:inline-grid;place-items:center;width:28px;height:38px;border-bottom:3px solid var(--ink);font:18px "Press Start 2P",monospace}
-.ahc.sep{border-bottom:0;width:14px}.ahc.miss{color:var(--red)}
+.ahc.sep{border-bottom:0}.ahc.miss{color:var(--red)}
 .ahkeys{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .ahk{min-height:46px;border-radius:8px;border:2px solid var(--ink);background:var(--box);color:var(--ink);font:13px "Press Start 2P",monospace}
 .ahk.hit{background:var(--ok);color:#fff}.ahk.no{background:var(--soft);color:var(--box);opacity:.5}
