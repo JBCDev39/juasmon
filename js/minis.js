@@ -252,7 +252,7 @@ export function createMinis(api) {
       <div class="box field">${st.turn === 'yo'
         ? `<p class="hint cadsaid keep">${st.chain.length === 1 ? 'La app empezó con' : 'La app dijo'} <b>${esc(cx.byId.get(st.chain[st.chain.length - 1].id).name)}</b>.</p><p class="q">Ahora usted: un Pokémon que empiece con <b class="bigletter px">${st.letter.toUpperCase()}</b></p>`
         : `<p class="q cadthink keep">La app está buscando uno con <b class="bigletter px">${st.letter.toUpperCase()}</b>…</p>`}
-        <div class="row"><input class="input" id="typed" data-ac="pokemon" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="${st.turn === 'yo' ? 'Escriba un Pokémon' : 'Espere su turno…'}" style="flex:1" ${st.turn === 'yo' ? '' : 'disabled'}><button class="btn" data-act="cad-send" ${st.turn === 'yo' ? '' : 'disabled'}>Enviar</button></div>
+        <div class="row"><input class="input" id="typed" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="${st.turn === 'yo' ? 'Escriba un Pokémon' : 'Espere su turno…'}" style="flex:1" ${st.turn === 'yo' ? '' : 'disabled'}><button class="btn" data-act="cad-send" ${st.turn === 'yo' ? '' : 'disabled'}>Enviar</button></div>
         ${st.msg ? `<p class="flash bad keep">${esc(st.msg)}</p>` : ''}<p class="hint">Lleva ${st.mine}.</p></div>
     </main>`;
   }

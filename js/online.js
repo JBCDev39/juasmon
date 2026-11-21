@@ -343,7 +343,7 @@ export function createOnline(api) {
       <div class="timer px"><span>${mine ? 'Su turno' : `Turno de ${esc(rival().name)}`}</span><div class="hp"><i id="cado-bar" style="width:${Math.max(0, left / CAD_TURN * 100)}%"></i></div><span id="cado-time">${Math.max(0, Math.ceil(left / 1000))}</span></div>
       <div class="box"><div class="chips cadchips">${chips}</div></div>
       <div class="box field"><p class="q">${mine ? 'Un Pokémon que empiece con' : `${esc(rival().name)} busca uno con`} <b class="bigletter px">${r.letter.toUpperCase()}</b></p>
-        <div class="row"><input class="input" id="typed" data-ac="pokemon" autocomplete="off" placeholder="${mine ? 'Escriba un Pokémon' : 'Espere su turno…'}" style="flex:1" ${mine ? '' : 'disabled'}><button class="btn" data-act="cado-send" ${mine ? '' : 'disabled'}>Enviar</button></div>
+        <div class="row"><input class="input" id="typed" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="${mine ? 'Escriba un Pokémon' : 'Espere su turno…'}" style="flex:1" ${mine ? '' : 'disabled'}><button class="btn" data-act="cado-send" ${mine ? '' : 'disabled'}>Enviar</button></div>
         ${cadMsg ? `<p class="flash bad keep">${esc(cadMsg)}</p>` : ''}</div>
     </main>`;
   }
