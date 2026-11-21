@@ -333,7 +333,7 @@ export function createOnline(api) {
     if (r.status === 'end') {
       const won = r.winner === me, w = r.players[r.winner];
       const line = won ? api.lineFor(api.WIN_LINES, r.seed) : api.lineFor(api.LOSE_LINES, r.seed, 1);
-      return `${head}<main class="enter"><div class="box"><p class="big px" style="color:${api.pColor(r.winner)}" data-tw="${esc(`¡${w.name} se la jugó!`)}">¡${esc(w.name)} se la jugó!</p>
+      return `${head}<main class="enter"><div class="box intro"><p class="big px" style="color:${api.pColor(r.winner)}" data-tw="${esc(`¡${w.name} se la jugó!`)}">¡${esc(w.name)} se la jugó!</p>
         <p class="${won ? 'winline px' : 'loseline'}">${won ? esc(line) : `<b>${esc(line)}</b>`}</p><p class="hint">${esc(r.why)}</p>${score}
         <div class="chips cadchips" style="margin-top:10px">${chips}</div>
         <div class="row end" style="margin-top:12px"><button class="btn ghost" data-act="on-leave">Salir</button><button class="btn ghost" data-act="on-lobby">Cambiar modo</button><button class="btn" data-act="on-rematch" id="nextbtn">${r.rematch?.[uid()] ? 'Esperando…' : 'Revancha'}</button></div></div></main>`;
@@ -352,7 +352,7 @@ export function createOnline(api) {
   function onlineView() {
     const head = api.screenHead('En línea');
     if (!live()) {
-      return `${head}<main class="enter"><div class="box"><p class="q">Los duelos en línea necesitan la nube del juego.</p>
+      return `${head}<main class="enter"><div class="box intro"><p class="q">Los duelos en línea necesitan la nube del juego.</p>
         <p class="hint">${api.db() ? 'Esta versión dentro de Claude no tiene duelos en línea. Ábralo desde la app: jbcdev39.github.io/juasmon' : 'Revise su conexión a internet y vuelva a abrir el juego.'}</p></div></main>`;
     }
     const saved = store.load('pt-sala', null);

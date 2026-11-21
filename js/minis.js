@@ -135,13 +135,13 @@ export function createMinis(api) {
     const head = api.screenHead('Tipo contra tipo', 'modos');
     if (st.mode !== 'tipos' || st.phase === 'intro') {
       const best = api.records().solo.tipos;
-      return `${head}<main class="enter"><div class="box"><p class="q">Sale un tipo atacando a un Pokémon de uno o dos tipos. Toque rapidito cuánto le hace: ×4, ×2, ×1, ×½, ×¼ o ×0.</p>
+      return `${head}<main class="enter"><div class="box intro"><p class="q">Sale un tipo atacando a un Pokémon de uno o dos tipos. Toque rapidito cuánto le hace: ×4, ×2, ×1, ×½, ×¼ o ×0.</p>
         <p class="hint">Tiene 30 segundos. Cada acierto suma 1. ${best ? `Su récord: ${best.best}.` : 'Todavía no tiene récord.'}</p>
         <div class="row end" style="margin-top:12px"><button class="btn" data-act="tvt-start" id="nextbtn">¡Vamos!</button></div></div></main>`;
     }
     if (st.phase === 'end') {
       const title = st.rec.isNew ? `¡Nuevo récord! ${st.score}` : `${st.score} ${st.score === 1 ? 'acierto' : 'aciertos'}`;
-      return `${head}<main class="enter"><div class="box"><p class="big px" data-tw="${esc(title)}">${esc(title)}</p>
+      return `${head}<main class="enter"><div class="box intro"><p class="big px" data-tw="${esc(title)}">${esc(title)}</p>
         <p class="hint">${st.miss ? `${api.plural(st.miss, 'fallo', 'fallos')}. ` : ''}${st.rec.prev !== null && !st.rec.isNew ? `Su récord sigue siendo ${st.rec.prev}.` : ''}${st.fichas ? ` +₡${st.fichas} para el casino.` : ''}</p>
         <div class="row end" style="margin-top:12px"><button class="btn ghost" data-act="go-modos">Más modos</button><button class="btn" data-act="tvt-start" id="nextbtn">Otra vez</button></div></div></main>`;
     }
@@ -229,7 +229,7 @@ export function createMinis(api) {
     const head = api.screenHead('Cadena Pokémon', 'modos');
     if (st.mode !== 'cadena') {
       const best = api.records().solo.cadena;
-      return `${head}<main class="enter"><div class="box"><p class="q">Usted contra la app: por turnos, se turnan para decir un Pokémon que empiece con la última letra del anterior. Por ejemplo: usted dice Pikachu, la app contesta Umbreon y usted sigue con uno que empiece con N.</p>
+      return `${head}<main class="enter"><div class="box intro"><p class="q">Usted contra la app: por turnos, se turnan para decir un Pokémon que empiece con la última letra del anterior. Por ejemplo: usted dice Pikachu, la app contesta Umbreon y usted sigue con uno que empiece con N.</p>
         <p class="hint">Tiene 20 segundos por turno y no se puede repetir. Pierde quien se quede pegado. ${best ? `Su récord: ${best.best} seguidos.` : ''}</p>
         <div class="row end" style="margin-top:12px"><button class="btn" data-act="cad-start" id="nextbtn">¡Vamos!</button></div></div></main>`;
     }
@@ -239,7 +239,7 @@ export function createMinis(api) {
     const legend = '<p class="cadleg"><span style="--c:var(--blue)">Usted</span><span style="--c:var(--red)">La app</span></p>';
     if (st.phase === 'end') {
       const title = st.won ? '¡Le ganó a la app!' : 'Diay, se quedó pegado';
-      return `${head}<main class="enter"><div class="box"><p class="big px" data-tw="${esc(title)}">${esc(title)}</p>
+      return `${head}<main class="enter"><div class="box intro"><p class="big px" data-tw="${esc(title)}">${esc(title)}</p>
         <p class="q">${esc(st.why)} ${api.plural(st.mine, 'Pokémon suyo', 'Pokémon suyos')} en la cadena.</p>
         <p class="hint">${st.rec.isNew ? '¡Nuevo récord!' : st.rec.prev !== null ? `Su récord: ${st.rec.prev}.` : ''}${st.fichas ? ` +₡${st.fichas} para el casino.` : ''}</p>
         <div class="chips cadchips" style="margin-top:10px">${chips}</div>
@@ -323,7 +323,7 @@ export function createMinis(api) {
     const head = api.screenHead('Ahorcado', 'modos');
     if (st.mode !== 'ahorcado') {
       const best = api.records().solo.ahorcado;
-      return `${head}<main class="enter"><div class="box"><p class="q">Adivine la palabra letra por letra. Puede ser un Pokémon, un movimiento, una habilidad, un líder, una ciudad o una región.</p>
+      return `${head}<main class="enter"><div class="box intro"><p class="q">Adivine la palabra letra por letra. Puede ser un Pokémon, un movimiento, una habilidad, un líder, una ciudad o una región.</p>
         <p class="hint">Tiene 6 errores: con cada uno se va dibujando el ahorcado. Siga adivinando palabras hasta que pierda una. ${best ? `Su récord: ${best.best} seguidas.` : ''}</p>
         <div class="row end" style="margin-top:12px"><button class="btn" data-act="ah-start" id="nextbtn">¡Vamos!</button></div></div></main>`;
     }

@@ -42,7 +42,7 @@ const RANKS = [[0, 'Novato'], [25, 'Entrenador'], [75, 'Líder de gimnasio'], [1
 const rankOf = xp => { let r = RANKS[0]; for (const x of RANKS) if (xp >= x[0]) r = x; const i = RANKS.indexOf(r); return { name: r[1], next: RANKS[i + 1] || null, i }; };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
-const APP_VERSION = 19;
+const APP_VERSION = 20;
 const FLAG_REASONS = ['La respuesta está mal', 'La pregunta no tiene sentido o es confusa', 'Un nombre o dato está mal escrito', 'Es demasiado fácil o difícil', 'Otro'];
 const FLAG_SVG = '<svg class="flagico" viewBox="0 0 10 12" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="0" width="1" height="12" fill="currentColor"/><rect x="2" y="1" width="6" height="1" fill="var(--red)"/><rect x="2" y="2" width="7" height="3" fill="var(--red)"/><rect x="2" y="5" width="5" height="1" fill="var(--red)"/></svg>';
 const store = {
@@ -685,18 +685,20 @@ function startDaily() {
 function boardHtml() {
   if (!dbRef) return '<p class="hint">La tabla compartida no está disponible ahora. Su resultado se guardó en este celular.</p>';
   if (!dailyBoard) return '<p class="hint">Cargando la tabla del día…</p>';
-  if (!dailyBoard.length) return '<p class="hint">Nadie ha terminado el reto de hoy todavía.</p>';
+  if (!dailyBoard.length) return '<p class="hint empty">Nadie ha terminado el reto de hoy todavía.</p>';
   return `<ol class="olist plain board">${dailyBoard.map((r, i) => `<li class="ok"><span class="num px">${i + 1}</span><span class="tx">${avatar(r, 'sm')} ${esc(r.name)}${r.id && r.id === userId ? ' <small class="hint">(tú)</small>' : ''}</span><span class="mark px">${fmtPts(r.score)} / 10</span></li>`).join('')}</ol>`;
 }
 function dailyView() {
   const date = crDate(), mine = daily[date];
   const past = Object.entries(daily).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 7);
   return `${screenHead('Reto del día')}<main class="${F.newScreen ? 'enter' : ''}">
-    <div class="box"><p class="q">${mine ? `Hoy hizo <b>${fmtPts(mine.score)} / 10</b>.` : 'Todavía no ha jugado el reto de hoy.'}</p>
-      <p class="hint">10 preguntas, las mismas para todos. Hay un reto nuevo cada día a medianoche, hora de Costa Rica. Racha: ${plural(dailyStreak(), 'día', 'días')} seguidos.</p>
-      ${mine ? '' : '<div class="row end" style="margin-top:12px"><button class="btn" data-act="playDaily">Jugar el reto</button></div>'}</div>
+    <div class="box intro"><p class="px modetitle">${mine ? '¡Reto de hoy listo!' : 'Reto de hoy'}</p>
+      <p class="q">${mine ? `Hoy hizo <b>${fmtPts(mine.score)} / 10</b>.` : 'Todavía no lo ha jugado.'}</p>
+      <p class="hint">10 preguntas, las mismas para todos. Hay uno nuevo cada medianoche, hora de Costa Rica.</p>
+      <div class="badges"><span class="badge">🔥 Racha: ${plural(dailyStreak(), 'día seguido', 'días seguidos')}</span></div>
+      ${mine ? '' : '<div class="row end"><button class="btn" data-act="playDaily">Jugar el reto</button></div>'}</div>
     <div class="setup"><div class="box field"><span class="l px">Tabla de hoy</span>${boardHtml()}</div>
-      <div class="box field"><span class="l px">Sus últimos retos</span>${past.length ? `<ol class="olist plain">${past.map(([d, r]) => `<li class="ok"><span class="tx">${d}</span><span class="mark px">${fmtPts(r.score)} / 10</span></li>`).join('')}</ol>` : '<p class="hint">Aquí van a aparecer sus resultados.</p>'}</div></div>
+      <div class="box field"><span class="l px">Sus últimos retos</span>${past.length ? `<ol class="olist plain">${past.map(([d, r]) => `<li class="ok"><span class="tx">${d}</span><span class="mark px">${fmtPts(r.score)} / 10</span></li>`).join('')}</ol>` : '<p class="hint empty">Aquí van a aparecer sus resultados.</p>'}</div></div>
   </main>`;
 }
 function medalsHtml(name) {
@@ -909,13 +911,13 @@ function soloView() {
   const t = cfg.solo.type;
   const recFor = k => {
     const key = k === 'clasica' ? `clasica:${cfg.solo.perRound}:${cfg.structure === 'rondas' ? cfg.rounds.length : 'mix'}` : k === 'contrarreloj' ? `contrarreloj:${cfg.solo.duration}` : k;
-    const r = records.solo[key]; return r ? `Su récord: ${fmtPts(r.best)}` : 'Todavía no tiene récord con estos ajustes.';
+    const r = records.solo[key]; return r ? `🏆 Su récord: ${fmtPts(r.best)}` : 'Sin récord con estos ajustes';
   };
   const g = E.GAME_TYPES[t];
   return `${screenHead('1 jugador')}<main class="${F.newScreen ? 'enter' : ''} solo">
     <div class="segs" role="group" aria-label="Modo de juego">${['clasica', 'supervivencia', 'contrarreloj'].map(k => `<button class="seg" data-act="soloType" data-val="${k}" aria-pressed="${t === k}">${pixSvg(AV_ICONS[SOLO_ICON[k]] || PIX[SOLO_ICON[k]], 'currentColor')}<span class="seglbl">${E.GAME_TYPES[k].name}</span></button>`).join('')}</div>
-    <div class="box modeinfo"><p class="q">${g.blurb}</p><p class="hint">${recFor(t)}</p></div>
-    <button class="summary" data-act="panel" data-val="solo" aria-expanded="${!!openPanel.solo}"><span class="px">Ajustes</span><span class="sumtxt">${esc(soloSummary(t))}</span><span class="chev" aria-hidden="true">${openPanel.solo ? '▾' : '▸'}</span></button>
+    <div class="box intro modeinfo"><p class="px modetitle">${g.name}</p><p class="q">${g.blurb}</p><div class="badges"><span class="badge">${recFor(t)}</span></div></div>
+    <button class="summary" data-act="panel" data-val="solo" aria-expanded="${!!openPanel.solo}"><span class="px">Ajustes</span><span class="chev" aria-hidden="true">${openPanel.solo ? '▾' : '▸'}</span><span class="sumchips">${soloSummary(t).split(' · ').map(x => `<span class="sumchip">${esc(x)}</span>`).join('')}</span></button>
     ${openPanel.solo ? `<div class="setup">${commonSettings(t, true)}</div>` : ''}
     <div class="playbar">${flash ? `<span class="hint">${esc(flash)}</span>` : ''}<button class="btn bigbtn" data-act="startSolo">¡Jugar!</button></div>
   </main>`;
@@ -1054,7 +1056,7 @@ function introView() {
   const s = state, c = s.config;
   const isStart = s.phase === 'intro';
   if (c.type === 'rosco') {
-    return `<main class="enter"><div class="box"><h2 class="px" data-tw="Juasrosco">Juasrosco</h2>
+    return `<main class="enter"><div class="box intro"><h2 class="px" data-tw="Juasrosco">Juasrosco</h2>
       <p class="q">27 letras, una pista por letra. Si acierta, sigue. Si falla o dice «¡Paso!»${s.players.length > 1 ? ', le toca al siguiente' : ', pasa a la siguiente letra'}. Las letras pasadas vuelven en la siguiente vuelta.</p>
       <p class="hint">${s.players.length > 1 ? `Cada uno tiene ${c.roscoTime} segundos y su propio rosco.` : `Tiene ${c.roscoTime} segundos.`} Puede escribir sin tildes; se perdona un error de tipeo en palabras de 5 letras o más.</p>
       <div class="row end" style="margin-top:14px"><button class="btn" data-act="begin" id="nextbtn">¡Vamos!</button></div></div></main>`;
@@ -1063,7 +1065,7 @@ function introView() {
     const g = c.daily ? { name: 'Reto del día' } : c.type === 'clasica' ? { name: 'Partida mezclada' } : E.GAME_TYPES[c.type];
     const rec = s.players.length === 1 && !c.daily ? records.solo[c.type === 'contrarreloj' ? `contrarreloj:${c.duration}` : c.type === 'clasica' ? `clasica:${c.perPlayer}:mix` : c.type] : null;
     const how = c.type === 'supervivencia' ? `Tiene ${c.lives} vidas. Cada error le quita una y cada pregunta puede ser de cualquier formato.` : c.type === 'contrarreloj' ? `Tiene ${c.duration} segundos. Responda rapidito: cada acierto suma 1 (medio punto si casi) y los errores no restan.` : c.daily ? `10 preguntas, las mismas para todos los que jueguen hoy. Solo cuenta el primer intento: si se sale a mitad, se guarda lo que lleve. ${SCORING.mezcla}` : `${plural(E.questionsPerRound(s), 'pregunta', 'preguntas')} de todos los formatos elegidos, mezclados al azar. ${SCORING.mezcla}`;
-    return `<main class="enter"><div class="box">
+    return `<main class="enter"><div class="box intro">
       <h2 class="px" data-tw="${esc(g.name)}">${esc(g.name)}</h2>
       <p class="q">${how}</p>
       <p class="hint">${s.players.length > 1 ? `Empieza ${esc(s.players[0].name)}.` : rec ? `Su récord es ${fmtPts(rec.best)}.` : 'Todavía no tiene récord en este modo.'}</p>
@@ -1483,9 +1485,9 @@ function endView() {
   const again = s.players.length > 1 ? 'startMultiCfg' : 'soloCfg';
   if (c.daily) {
     const right = s.log.filter(l => l.correct).length;
-    return `<main class="enter"><div class="box"><p class="big px" data-tw="¡Reto completado!">¡Reto completado!</p>
+    return `<main class="enter"><div class="box intro"><p class="big px" data-tw="¡Reto completado!">¡Reto completado!</p>
       <p class="px" style="font-size:clamp(28px,6vw,44px);margin:14px 0 4px">${fmtPts(s.scores[0])} / 10</p>
-      <p class="hint">${right} de ${s.log.length} correctas. Racha: ${plural(dailyStreak(), 'día', 'días')} seguidos. Mañana hay otro reto.</p>${endExtras()}</div>
+      <p class="hint">${right} de ${s.log.length} correctas. Racha: ${plural(dailyStreak(), 'día seguido', 'días seguidos')}. Mañana hay otro reto.</p>${endExtras()}</div>
       <div class="box field"><span class="l px">Tabla de hoy</span>${boardHtml()}</div>
       <div class="row end"><button class="btn ghost" data-act="menu">Menú</button><button class="btn" data-act="daily" id="nextbtn">Ver el reto del día</button></div></main>`;
   }
