@@ -1,7 +1,7 @@
 // Service worker de JUASmon: guarda el juego en el teléfono para que
 // abra rápido y se pueda jugar sin internet (1 jugador, multijugador local, rosco).
 // Al publicar una versión nueva, cambia VERSION para que los teléfonos la descarguen.
-const VERSION = 'juasmon-v18';
+const VERSION = 'juasmon-v19';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './js/ui.js', './js/engine.js', './js/preguntas.js', './js/rosco.js', './js/util.js', './js/nube.js', './js/firebase-config.js', './js/minis.js', './js/casino.js', './js/online.js', './js/cielo.js', './js/musica.js',

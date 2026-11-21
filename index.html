@@ -22,7 +22,7 @@
    TYPE   Press Start 2P for labels, numbers and the wordmark + Rubik for reading
    LAYOUT title centred over the scene; menu as a grid of cartridges; play: HUD, stage, menu box; phone stacks */
 :root{color-scheme:light dark;--bg:light-dark(#cfe8b9,#0f1d14);--field:light-dark(#b9dc9f,#1a3324);--box:light-dark(#ffffff,#1b2420);--ink:light-dark(#1d2321,#eef3ec);--soft:light-dark(#56615b,#a9b7ae);--line:light-dark(#5c8f6a,#4f8a63);--red:#e3350d;--redd:#a3230a;--blue:#2f6fdb;--yellow:#ffcb05;--ok:#2e9e4f;--bad:#d7263d;
---sky1:light-dark(#6ec3ef,#0b1733);--sky2:light-dark(#d9f2ff,#2a3d6b);--h1:light-dark(#a6d98f,#244a3a);--h2:light-dark(#77bb5f,#1d3d2b);--h3:light-dark(#4f9a44,#163223);--gr:light-dark(#3f8a3a,#11281b);--tuft:light-dark(#2c6a2a,#0b1d13);--cloud:light-dark(#ffffff,#8796b8);--cloud2:light-dark(#d6ecf8,#5f6e92);--sun:light-dark(#fff3a6,#f2f0d6);--star:light-dark(transparent,#f6f3c9);--vol:light-dark(#7f9a86,#2a3d3a);--vol2:light-dark(#c9d6cf,#4a5c58);--smoke:light-dark(#eef2f0,#6b7a80);--leaf:light-dark(#2f7d3a,#163b22)}
+--sky1:light-dark(#6ec3ef,#0b1733);--sky2:light-dark(#d9f2ff,#2a3d6b);--h1:light-dark(#a6d98f,#244a3a);--h2:light-dark(#77bb5f,#1d3d2b);--h3:light-dark(#4f9a44,#163223);--gr:light-dark(#3f8a3a,#11281b);--tuft:light-dark(#2c6a2a,#0b1d13);--cloud:light-dark(#ffffff,#8796b8);--cloud2:light-dark(#d6ecf8,#5f6e92);--sun:light-dark(#fff3a6,#f2f0d6);--star:light-dark(transparent,#f6f3c9);--vol:light-dark(#7f9a86,#2a3d3a);--vol2:light-dark(#c9d6cf,#4a5c58);--smoke:light-dark(#eef2f0,#6b7a80);--leaf:light-dark(#2f7d3a,#163b22);--leaf2:light-dark(#22612c,#0f2a18);--leaf3:light-dark(#469a46,#1f4a2c);--trunk:light-dark(#5a3d24,#33241a)}
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
 html,body{height:100%}
@@ -583,8 +583,8 @@ button.rcell{background:repeating-linear-gradient(135deg,#b8b8b8 0 8px,#d0d0d0 8
 .skyline{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:center;background:rgba(29,35,33,.55);color:#fff;border-radius:12px;padding:8px 12px;text-align:center}
 .skyline b{font-size:10px;font-weight:400;color:#ffcb05}.skyline span{font-size:13px}
 /* volcán, fauna y profundidad */
-.scene .smoke{animation:smoke 6.4s ease-out infinite;opacity:0}
-@keyframes smoke{0%{transform:translate(0,4px) scale(.6);opacity:0}20%{opacity:.85}100%{transform:translate(10px,-22px) scale(1.6);opacity:0}}
+.scene .smoke{animation:smoke 6.4s ease-out infinite;opacity:0;transform-box:fill-box;transform-origin:50% 100%}
+@keyframes smoke{0%{transform:translateY(4px) scale(.6);opacity:0}20%{opacity:.85}100%{transform:translate(1px,-24px) scale(1.5);opacity:0}}
 .scene .sloth{animation:sloth 9s ease-in-out infinite alternate}
 @keyframes sloth{from{transform:rotate(-3deg)}to{transform:rotate(3deg)}}
 .scene .flyby{animation:flyby linear infinite}
@@ -605,19 +605,22 @@ button.rcell{background:repeating-linear-gradient(135deg,#b8b8b8 0 8px,#d0d0d0 8
 /* para que todo se sienta vivo */
 .tcard .avatar.idlebob{animation:idlebob 6s ease-in-out infinite}
 @keyframes idlebob{0%,84%,100%{transform:none}88%{transform:translateY(-6px) rotate(-4deg)}92%{transform:translateY(0) rotate(0)}95%{transform:translateY(-3px)}}
-.tile .ico svg.idle-star{animation:twinkle-i 2.6s ease-in-out infinite}
+.ico svg.idle-star{animation:twinkle-i 2.6s ease-in-out infinite}
 @keyframes twinkle-i{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.15) rotate(12deg)}}
-.tile .ico svg.idle-coin{animation:coinspin 3s ease-in-out infinite}
+.ico svg.idle-coin{animation:coinspin 3s ease-in-out infinite}
 @keyframes coinspin{0%,60%,100%{transform:scaleX(1)}70%{transform:scaleX(.1)}80%{transform:scaleX(1)}90%{transform:scaleX(.1)}}
-.tile .ico svg.idle-ring{animation:spin-i 6s linear infinite}
+.ico svg.idle-ring{animation:spin-i 6s linear infinite}
 @keyframes spin-i{to{transform:rotate(360deg)}}
-.tile .ico svg.idle-dice{animation:dice-i 4s ease-in-out infinite}
+.ico svg.idle-dice{animation:dice-i 4s ease-in-out infinite}
 @keyframes dice-i{0%,80%,100%{transform:none}84%{transform:rotate(-14deg) translateY(-3px)}88%{transform:rotate(12deg)}92%{transform:rotate(-6deg)}}
-.tile .ico svg.idle-pencil{animation:wiggle-i 3.4s ease-in-out infinite;transform-origin:20% 80%}
+.ico svg.idle-pencil{animation:wiggle-i 3.4s ease-in-out infinite;transform-origin:20% 80%}
 @keyframes wiggle-i{0%,70%,100%{transform:none}76%{transform:rotate(-12deg)}82%{transform:rotate(10deg)}88%{transform:rotate(-6deg)}}
-.tile .ico svg.idle-trophy{animation:shine-i 3s ease-in-out infinite}
+.ico svg.idle-trophy{animation:shine-i 3s ease-in-out infinite}
+@keyframes zap-i{0%,76%,100%{filter:none;transform:none}80%{filter:brightness(1.8);transform:scale(1.12)}84%{filter:none;transform:none}88%{filter:brightness(1.8)}}
+.ico svg.idle-zap{animation:zap-i 3.2s steps(1) infinite}
+@keyframes ghost-i{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.ico svg.idle-ghost{animation:ghost-i 2.8s ease-in-out infinite}
 @keyframes shine-i{0%,70%,100%{filter:none;transform:none}80%{filter:brightness(1.6) drop-shadow(0 0 3px #fff);transform:translateY(-2px)}}
-.nbadge.keep{animation:pulse 1.6s ease-in-out infinite}
 .tile,.bp,.hubcard,.castile,.seg,.preset,.ahk,.contbtn,.tcard,.summary,.opt{transition:transform .32s cubic-bezier(.34,1.56,.64,1),background .2s,box-shadow .2s}
 .tile:active,.bp:active,.hubcard:active,.castile:active,.preset:active,.ahk:active,.contbtn:active,.summary:active{transform:scale(.95);transition-duration:.08s}
 .opt:active:not(:disabled){transform:scale(.97);transition-duration:.08s}

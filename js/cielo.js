@@ -109,14 +109,7 @@ export function holidayLayer(h) {
     let path = '';
     for (let x = 0; x <= 320; x += 4) { const y = 6 + Math.round(Math.sin(x / 26) * 4 + 4); path += px(x, y, 4, 1, '#2b3a2b'); if (x % 16 === 0) out += px(x + 1, y + 1, 2, 3, colors[(x / 16) % colors.length], `class="blinkl" style="animation-delay:${(-(x / 16) % 5 * 0.3).toFixed(1)}s"`); }
     out = path + out;
-    if (h.id === 'navidad') {
-      // Arbolito en la colina
-      const tx = 126, ty = 104;  // cerca del centro: en el celular solo se ve el centro del paisaje
-      out += px(tx + 6, ty - 3, 2, 2, '#ffd23f');
-      for (let i = 0; i < 4; i++) out += px(tx + 6 - i * 2, ty + i * 4, 2 + i * 4, 4, '#1f6b35');
-      out += px(tx + 5, ty + 16, 4, 4, '#6b3f1f');
-      out += px(tx + 4, ty + 6, 1, 1, '#ff4b4b') + px(tx + 9, ty + 9, 1, 1, '#4b9bff') + px(tx + 3, ty + 13, 1, 1, '#ffd23f') + px(tx + 11, ty + 13, 1, 1, '#ff8be0');
-    } else {
+    if (h.id === 'anonuevo') {
       // Fuegos artificiales
       const bursts = [[132, 44, '#ffd23f'], [160, 26, '#ff4b4b'], [188, 50, '#4b9bff'], [70, 40, '#3fd47a'], [250, 34, '#ff8be0']];
       bursts.forEach(([cx, cy, c], k) => {
@@ -135,7 +128,7 @@ export function holidayLayer(h) {
       out += `<g class="swing" style="transform-origin:${x + 3}px ${y}px;animation-delay:${(-i * 0.4).toFixed(1)}s">${px(x + 2, y, 2, 3, '#6b4a2a')}${px(x, y + 3, 7, 1, '#3a2a1a')}${px(x, y + 4, 7, 8, c)}${px(x + 2, y + 6, 3, 4, '#fff5b0', 'opacity=".8"')}${px(x, y + 12, 7, 1, '#3a2a1a')}</g>`;
     }
     // Bandera de Costa Rica en un asta, en la colina
-    const fx = 190, fy = 90;
+    const fx = 153, fy = 92;
     out += px(fx, fy, 1, 30, '#5a4a3a');
     out += `<g class="wave" style="transform-origin:${fx + 1}px ${fy}px">${px(fx + 1, fy, 20, 2, '#1f3fa8')}${px(fx + 1, fy + 2, 20, 2, '#ffffff')}${px(fx + 1, fy + 4, 20, 4, '#d81f2a')}${px(fx + 1, fy + 8, 20, 2, '#ffffff')}${px(fx + 1, fy + 10, 20, 2, '#1f3fa8')}</g>`;
   }
@@ -149,6 +142,43 @@ export function holidayLayer(h) {
       const x = Math.floor(r() * 316), y = 154 + Math.floor(r() * 22), c = colors[i % colors.length];
       out += px(x + 1, y + 2, 1, 4, '#2c6a2a') + px(x, y, 3, 1, c) + px(x + 1, y - 1, 1, 3, c);
     }
+  }
+  return out;
+}
+
+// ---------- árbol de Guanacaste (copa ancha y plana, como sombrilla) ----------
+// cx: centro, gy: donde toca el suelo, w: ancho de la copa. Con luces en Navidad; con perezoso si sloth.
+export function guanacaste(cx, gy, w, { lights = false, sloth = false, seed = 7 } = {}) {
+  const r = rnd(seed);
+  const trunkH = Math.round(w * 0.24), fork = gy - trunkH, cb = fork - Math.round(w * 0.16);
+  const tw = w >= 26 ? 3 : 2;
+  let out = px(cx - (tw >> 1), fork, tw, trunkH, 'var(--trunk)');
+  // ramas en V que abren hacia la copa
+  const reach = Math.round(w * 0.3), steps = fork - cb;
+  for (let i = 0; i <= steps; i++) {
+    const d = Math.round(reach * i / steps);
+    out += px(cx - d - 1, fork - i, 2, 1, 'var(--trunk)') + px(cx + d, fork - i, 2, 1, 'var(--trunk)');
+    if (i < steps - 1) out += px(cx - (d >> 1), fork - i, 1, 1, 'var(--trunk)');
+  }
+  // copa: de abajo hacia arriba, cada fila un poco más angosta
+  const rows = [[1, 'var(--leaf2)'], [1.04, 'var(--leaf)'], [1, 'var(--leaf)'], [0.94, 'var(--leaf)'], [0.84, 'var(--leaf)'], [0.68, 'var(--leaf3)'], [0.44, 'var(--leaf3)']];
+  rows.forEach(([f, c], k) => { const rw = Math.round(w * f); out += px(cx - (rw >> 1), cb - 2 - k * 2, rw, 2, c); });
+  // bultitos arriba y matas que cuelgan abajo para que no se vea tan cuadrada
+  for (let i = 0; i < 4; i++) { const bw = 4 + Math.floor(r() * 5), bx = cx - (w >> 2) + Math.floor(r() * (w >> 1)) - (bw >> 1); out += px(bx, cb - 2 - rows.length * 2, bw, 2, 'var(--leaf3)'); }
+  for (let x = cx - (w >> 1) + 2; x < cx + (w >> 1) - 3; x += 5 + Math.floor(r() * 3)) out += px(x, cb, 3, 1 + Math.floor(r() * 2), 'var(--leaf2)');
+  if (lights) {
+    const colors = ['#ff4b4b', '#ffd23f', '#3fd47a', '#4b9bff', '#ff8be0'];
+    let k = 0;
+    const bulb = (x, y) => { out += px(x, y, 1, 1, colors[k % colors.length], `class="blinkl" style="animation-delay:${(-(k % 5) * 0.32).toFixed(2)}s"`); k++; };
+    // guirnalda en el borde de abajo y otra a media copa
+    for (let x = cx - (w >> 1) + 1; x < cx + (w >> 1); x += 3) bulb(x, cb + 1 - (k % 2));
+    const mid = Math.round(w * 0.8);
+    for (let x = cx - (mid >> 1) + 1; x < cx + (mid >> 1); x += 4) bulb(x, cb - 7 - (k % 2));
+  }
+  if (sloth) {
+    // perezoso colgando de la rama izquierda (casi no se mueve, como debe ser)
+    const sx = cx - Math.round(w * 0.32), sy = cb + 1;
+    out += `<g class="sloth" style="transform-origin:${sx + 2}px ${sy}px">${px(sx, sy, 1, 3, '#7a5a3a')}${px(sx + 3, sy, 1, 3, '#7a5a3a')}${px(sx - 1, sy + 3, 6, 5, '#9c7a55')}${px(sx, sy + 4, 4, 2, '#d9c3a0')}${px(sx, sy + 4, 1, 1, '#1d2321')}${px(sx + 3, sy + 4, 1, 1, '#1d2321')}</g>`;
   }
   return out;
 }
@@ -174,11 +204,6 @@ const sprite = (parts, x, y) => parts.map(([dx, dy, w, h, c]) => px(x + dx, y + 
 export function faunaLayer(sky) {
   let out = '';
   const day = !sky.night, wet = ['lluvia', 'tormenta', 'llovizna'].includes(sky.weather);
-  // Árbol con un perezoso colgando de la rama (casi no se mueve, como debe ser)
-  const tx = 150, ty = 112;
-  out += px(tx, ty, 3, 22, '#5a3d24') + px(tx - 10, ty - 2, 14, 2, '#5a3d24');
-  out += px(tx - 8, ty - 12, 20, 6, 'var(--leaf)') + px(tx - 12, ty - 8, 26, 6, 'var(--leaf)') + px(tx - 4, ty - 15, 12, 4, 'var(--leaf)');
-  out += `<g class="sloth" style="transform-origin:${tx - 8}px ${ty}px">${px(tx - 9, ty, 1, 3, '#7a5a3a')}${px(tx - 6, ty, 1, 3, '#7a5a3a')}${px(tx - 10, ty + 3, 6, 5, '#9c7a55')}${px(tx - 9, ty + 4, 4, 2, '#d9c3a0')}${px(tx - 9, ty + 4, 1, 1, '#1d2321')}${px(tx - 6, ty + 4, 1, 1, '#1d2321')}</g>`;
   if (day && !wet) {
     // Tucán y colibrí que cruzan de vez en cuando
     out += `<g class="flyby" style="animation-duration:26s;animation-delay:-6s"><g class="flap">${sprite(TOUCAN, -20, 46)}</g></g>`;

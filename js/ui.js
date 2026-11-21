@@ -9,7 +9,7 @@ import { connectCloud } from './nube.js';
 import { createMinis } from './minis.js';
 import { createCasino } from './casino.js';
 import { createOnline } from './online.js';
-import { createSky, weatherLayer, holidayLayer, volcanoLayer, faunaLayer } from './cielo.js';
+import { createSky, weatherLayer, holidayLayer, guanacaste, volcanoLayer, faunaLayer } from './cielo.js';
 import { createMusic } from './musica.js';
 
 {
@@ -42,7 +42,7 @@ const RANKS = [[0, 'Novato'], [25, 'Entrenador'], [75, 'Líder de gimnasio'], [1
 const rankOf = xp => { let r = RANKS[0]; for (const x of RANKS) if (xp >= x[0]) r = x; const i = RANKS.indexOf(r); return { name: r[1], next: RANKS[i + 1] || null, i }; };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
-const APP_VERSION = 15;
+const APP_VERSION = 16;
 const FLAG_REASONS = ['La respuesta está mal', 'La pregunta no tiene sentido o es confusa', 'Un nombre o dato está mal escrito', 'Es demasiado fácil o difícil', 'Otro'];
 const FLAG_SVG = '<svg class="flagico" viewBox="0 0 10 12" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="0" width="1" height="12" fill="currentColor"/><rect x="2" y="1" width="6" height="1" fill="var(--red)"/><rect x="2" y="2" width="7" height="3" fill="var(--red)"/><rect x="2" y="5" width="5" height="1" fill="var(--red)"/></svg>';
 const store = {
@@ -330,14 +330,20 @@ function scene() {
     out += `<g class="drift" style="animation-duration:${dur.toFixed(0)}s;animation-delay:${(-rnd() * dur).toFixed(0)}s"><g transform="translate(0 ${Math.floor(14 + rnd() * 58)})">${cloud(Math.floor(22 + rnd() * 26))}</g></g>`;
   }
   // tres capas de colinas escalonadas
+  const hillY = (base, amp, step, f1, f2, x) => { x -= x % step; return Math.round(base - amp * (Math.sin(x * f1 + base) * .6 + Math.sin(x * f2 + base * 2) * .4)); };
   const hills = (base, amp, step, fill, f1, f2) => {
     let d = `M0 ${H}`;
-    for (let x = 0; x <= W; x += step) { const y = Math.round(base - amp * (Math.sin(x * f1 + base) * .6 + Math.sin(x * f2 + base * 2) * .4)); d += ` L${x} ${y} L${x + step} ${y}`; }
+    for (let x = 0; x <= W; x += step) { const y = hillY(base, amp, step, f1, f2, x); d += ` L${x} ${y} L${x + step} ${y}`; }
     return `<path d="${d} L${W} ${H} Z" fill="${fill}"/>`;
   };
   // El volcán va detrás de las colinas; cada capa de colinas se mueve un poquito distinto con el scroll.
   out += volcanoLayer();
-  out += `<g class="para p1">${hills(112, 16, 8, 'var(--h1)', 0.021, 0.047)}</g><g class="para p2">${hills(128, 12, 6, 'var(--h2)', 0.031, 0.013)}</g><g class="para p3">${hills(144, 8, 4, 'var(--h3)', 0.045, 0.02)}</g>`;
+  // Dos guanacastes separados: uno lejos (en la loma de atrás) y otro más cerca, con el perezoso. Luces en Navidad.
+  const xmas = sky.holiday?.id === 'navidad';
+  const farX = 186, nearX = 138;
+  const farTree = guanacaste(farX, hillY(112, 16, 8, 0.021, 0.047, farX) + 3, 22, { lights: xmas, seed: 11 });
+  const nearTree = guanacaste(nearX, hillY(128, 12, 6, 0.031, 0.013, nearX) + 4, 30, { lights: xmas, sloth: true, seed: 5 });
+  out += `<g class="para p1">${hills(112, 16, 8, 'var(--h1)', 0.021, 0.047)}${farTree}</g><g class="para p2">${hills(128, 12, 6, 'var(--h2)', 0.031, 0.013)}${nearTree}</g><g class="para p3">${hills(144, 8, 4, 'var(--h3)', 0.045, 0.02)}</g>`;
   out += `<rect y="152" width="${W}" height="${H - 152}" fill="var(--gr)"/>`;
   // hierba alta que se mece
   for (let i = 0; i < 46; i++) {
@@ -773,24 +779,24 @@ const BACK_NAMES = { menu: 'Menú', hoy: 'Hoy', modos: 'Más modos', casino: 'Ca
 function pendingToday() {
   try { return (daily[crDate()] ? 0 : 1) + (MINI.pokedleDone() ? 0 : 1) + (CAS.scratchDone() ? 0 : 1); } catch { return 0; }
 }
-function hubCard(act, val, title, desc, status, icon, color, done) {
-  return `<button class="hubcard ${done ? 'done' : ''}" data-act="${act}" ${val ? `data-val="${val}"` : ''} style="--cc:${color}"><span class="ico">${pixSvg(icon, '#1d2321')}</span><span class="tt"><b class="px">${title}</b><span>${desc}</span><small>${status}</small></span><span class="chev" aria-hidden="true">${done ? '✓' : '▸'}</span></button>`;
+function hubCard(act, val, title, desc, status, icon, color, done, idle = '') {
+  return `<button class="hubcard ${done ? 'done' : ''}" data-act="${act}" ${val ? `data-val="${val}"` : ''} style="--cc:${color}"><span class="ico">${pixSvg(icon, '#1d2321').replace('<svg ', `<svg class="keep idle-${idle}" `)}</span><span class="tt"><b class="px">${title}</b><span>${desc}</span><small>${status}</small></span><span class="chev" aria-hidden="true">${done ? '✓' : '▸'}</span></button>`;
 }
 function hoyView() {
   const t = daily[crDate()], pd = MINI.pokedleStatus(), rs = CAS.scratchDone();
   return `${screenHead('Hoy')}<main class="${F.newScreen ? 'enter' : ''} hub">
     <p class="hint">Todo se renueva a medianoche, hora de Costa Rica.</p>
-    ${hubCard('daily', '', 'Reto del día', '10 preguntas, las mismas para todos.', t ? `Hoy hizo ${fmtPts(t.score)} / 10 · racha de ${plural(dailyStreak(), 'día', 'días')}` : 'Pendiente', PIX.star, '#2f6fdb', !!t)}
-    ${hubCard('mini-open', 'pokedleDia', 'Pokédle del día', 'Adivine el Pokémon secreto en 6 intentos y compártalo.', pd || 'Pendiente', PIX.dice, '#2e9e4f', MINI.pokedleDone())}
-    ${hubCard('cas-open', 'rasca', 'Raspadita diaria', 'Una gratis por día para el Casino Azulona.', rs ? `Hoy ganó ₡${CAS.scratchPrize()}` : 'Pendiente', PIX.coin, '#e8a500', rs)}
+    ${hubCard('daily', '', 'Reto del día', '10 preguntas, las mismas para todos.', t ? `Hoy hizo ${fmtPts(t.score)} / 10 · racha de ${plural(dailyStreak(), 'día', 'días')}` : 'Pendiente', PIX.star, '#2f6fdb', !!t, 'star')}
+    ${hubCard('mini-open', 'pokedleDia', 'Pokédle del día', 'Adivine el Pokémon secreto en 6 intentos y compártalo.', pd || 'Pendiente', PIX.dice, '#2e9e4f', MINI.pokedleDone(), 'dice')}
+    ${hubCard('cas-open', 'rasca', 'Raspadita diaria', 'Una gratis por día para el Casino Azulona.', rs ? `Hoy ganó ₡${CAS.scratchPrize()}` : 'Pendiente', PIX.coin, '#e8a500', rs, 'coin')}
   </main>`;
 }
 function modosView() {
   const best = k => records.solo[k] ? `Récord: ${records.solo[k].best}` : 'Sin récord todavía';
   return `${screenHead('Más modos')}<main class="${F.newScreen ? 'enter' : ''} hub">
-    ${hubCard('mini-open', 'cadena', 'Cadena Pokémon', 'Contra la app: un Pokémon que empiece con la última letra del anterior.', best('cadena'), PIX.ring, '#2f6fdb')}
-    ${hubCard('mini-open', 'tipos', 'Tipo contra tipo', '30 segundos de reflejos: ¿cuánto daño le hace?', best('tipos'), AV_ICONS.rayo, '#e3350d')}
-    ${hubCard('mini-open', 'ahorcado', 'Ahorcado', 'Letra por letra antes de que la bomba se despiche.', best('ahorcado'), AV_ICONS.fantasma || PIX.pencil, '#8a4fd1')}
+    ${hubCard('mini-open', 'cadena', 'Cadena Pokémon', 'Contra la app: un Pokémon que empiece con la última letra del anterior.', best('cadena'), PIX.ring, '#2f6fdb', false, 'ring')}
+    ${hubCard('mini-open', 'tipos', 'Tipo contra tipo', '30 segundos de reflejos: ¿cuánto daño le hace?', best('tipos'), AV_ICONS.rayo, '#e3350d', false, 'zap')}
+    ${hubCard('mini-open', 'ahorcado', 'Ahorcado', 'Letra por letra antes de que la bomba se despiche.', best('ahorcado'), AV_ICONS.fantasma || PIX.pencil, '#8a4fd1', false, 'ghost')}
   </main>`;
 }
 function screenHead(title, back = 'menu') {
